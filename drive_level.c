@@ -36,6 +36,7 @@
 #include "main.h"
 #include "drive_level.h"
 #include "protocol2.h"
+#include "vfo.h"
 
 static char *title="Drive";
 
@@ -55,22 +56,22 @@ static gboolean drive_level_draw_cb(GtkWidget *widget,cairo_t *cr,gpointer data)
 
   cairo_set_line_width(cr,1.0);
 
-  cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
+  SetColour(cr, BACKGROUND);
   cairo_rectangle(cr,0,0,width,height);
   cairo_fill(cr);
 
   double v=radio->transmitter->drive;
   x=(bar_width/100.0)*v;
-  cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+  SetColour(cr, TEXT_C);
   cairo_rectangle(cr,5,0,x,(height/2)-1);
   cairo_fill(cr);
 
-  cairo_set_source_rgb(cr, 0.25, 0.25, 0.25);
+  SetColour(cr, TEXT_B);
   cairo_move_to(cr,5,height/2);
   cairo_line_to(cr,width-5,height/2);
   cairo_stroke(cr);
 
-  cairo_set_source_rgb(cr, 0.25, 0.25, 0.25);
+  SetColour(cr, TEXT_B);
   for(i=0;i<=100;i+=25) {
     x=((double)i/100.0)*(double)bar_width;
     if((i%50)==0) {
@@ -82,7 +83,8 @@ static gboolean drive_level_draw_cb(GtkWidget *widget,cairo_t *cr,gpointer data)
     cairo_stroke(cr);
   }
 
-  cairo_set_source_rgb(cr, 0.25, 0.25, 0.25);
+  SetColour(cr, TEXT_B);
+  cairo_select_font_face(cr, "Noto Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);  
   cairo_set_font_size(cr,10);
   cairo_text_extents(cr, title, &extents);
   sprintf(t,"%s (%d%%)",title,(int)radio->transmitter->drive);

@@ -93,20 +93,19 @@ GtkWidget *create_radio_info_visual(RECEIVER *rx) {
 
   x+=40;
 
+#ifdef CWDAEMON
+  info->cwdaemon_b=gtk_toggle_button_new_with_label("CWX");
+  gtk_widget_set_name(info->cwdaemon_b,"info-button");
+  gtk_layout_put(GTK_LAYOUT(info->radio_info),info->cwdaemon_b,x,y);
+  x+=40;  
+#endif
+
 #ifdef MIDI
   // MIDI
   info->midi_b=gtk_toggle_button_new_with_label("MIDI");
   gtk_widget_set_name(info->midi_b,"info-button");
   g_signal_connect(info->midi_b, "button_press_event", G_CALLBACK(midi_b_press_cb),rx);
   gtk_layout_put(GTK_LAYOUT(info->radio_info),info->midi_b,x,y);
-
-  x+=40;
-#endif
-
-#ifdef CWDAEMON
-  info->cwdaemon_b=gtk_toggle_button_new_with_label("CWX");
-  gtk_widget_set_name(info->cwdaemon_b,"info-button");
-  gtk_layout_put(GTK_LAYOUT(info->radio_info),info->cwdaemon_b,x,y);
 #endif
 
   g_object_set_data ((GObject *)info->radio_info,"info_data",info);
@@ -133,6 +132,8 @@ void update_radio_info(RECEIVER *rx) {
   }
 
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(info->swr_b),radio->transmitter->swr>radio->swr_alarm_value);
+
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(info->cat_b), rx->rigctl_enable);
 
 #ifdef MIDI
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(info->midi_b),radio->midi_enabled && (radio->receiver[midi_rx]->channel==rx->channel));

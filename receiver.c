@@ -875,21 +875,26 @@ void receiver_move_to(RECEIVER *rx,long long hz) {
   
     f=start+offset+(long long)((double)rx->pan*rx->hz_per_pixel);
     f=f/rx->step*rx->step;
+    
+    double cw_offset = 0;
+    if(rx->mode_a==CWL || rx->mode_a==CWU) {  
+      if(rx->mode_a==CWU) {
+        cw_offset=-radio->cw_keyer_sidetone_frequency;
+      } else {
+        cw_offset=+radio->cw_keyer_sidetone_frequency;
+      }  
+    }    
+    
     if(rx->ctun) {
       delta=rx->ctun_frequency;
-      rx->ctun_frequency=f;
+      rx->ctun_frequency=f + cw_offset;
       delta=rx->ctun_frequency-delta;
     } else {
-      if(rx->split==SPLIT_ON && (rx->mode_a==CWL || rx->mode_a==CWU)) {
-        if(rx->mode_a==CWU) {
-          f=f-radio->cw_keyer_sidetone_frequency;
-        } else {
-          f=f+radio->cw_keyer_sidetone_frequency;
-        }
-        rx->frequency_b=f;
+      if((rx->split==SPLIT_ON) && (rx->mode_a==CWL || rx->mode_a==CWU)) {
+        rx->frequency_b=f + cw_offset; 
       } else {
         delta=rx->frequency_a;
-        rx->frequency_a=f;
+        rx->frequency_a=f + cw_offset;
         delta=rx->frequency_a-delta;
       }
     }
@@ -1356,7 +1361,7 @@ static void create_visual(RECEIVER *rx) {
   rx->table=gtk_table_new(4,6,FALSE);
 
   rx->vfo=create_vfo(rx);
-  gtk_widget_set_size_request(rx->vfo,715,65);
+  gtk_widget_set_size_request(rx->vfo,715,75);
   gtk_table_attach(GTK_TABLE(rx->table), rx->vfo, 0, 3, 0, 1,
       GTK_FILL, GTK_FILL, 0, 0);
   

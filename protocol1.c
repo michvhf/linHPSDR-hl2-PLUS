@@ -333,6 +333,10 @@ static void start_protocol1_thread() {
       if(setsockopt(data_socket, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval))<0) {
         perror("data_socket: SO_REUSEPORT");
       }
+      optval = 6;  
+      if(setsockopt(data_socket, SOL_SOCKET, SO_PRIORITY, &optval, sizeof(optval))<0) {
+        perror("data_socket: SO_PRIORITY");
+      }      
 
       // bind to the interface
       if(bind(data_socket,(struct sockaddr*)&radio->discovered->info.network.interface_address,radio->discovered->info.network.interface_length)<0) {
@@ -487,13 +491,14 @@ g_print("process_control_bytes: ppt=%d dot=%d dash=%d\n",radio->ptt,radio->dot,r
       
       //HL2 Buffer over/underflow
       #ifdef CWDAEMON
-      if ((radio->ptt) || keytx) {
+      //if ((radio->ptt) || keytx) {
           int recov = (control_in[3]&0x40) == 0x40;
-          int msb = (control_in[3]&0x80) == 0x80;
-          if (msb == 1) {
-            g_print("Buffer recovery %d %d\n", recov, msb);
-          }   
-      }    
+          //int msb = (control_in[3]&0x80) == 0x80;
+          int msb = control_in[3];          
+          //if (msb == 1) {
+            //g_print("Buffer recovery %d %d\n", recov, msb);
+          //}   
+      //}    
       #endif
       //}
       
@@ -1104,7 +1109,9 @@ void ozy_send_buffer() {
         break;
       case 3:  // EXT 1
         //output_buffer[C3]|=0xA0;
-        output_buffer[C3]|=0xC0;
+        printf("EXT1\n");
+        //output_buffer[C3]|=0xC0;
+        output_buffer[C3]|=0xE0;
         break;
       case 4:  // EXT 2
         //output_buffer[C3]|=0xC0;

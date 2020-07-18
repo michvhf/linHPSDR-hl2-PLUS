@@ -32,6 +32,7 @@
 #include "radio.h"
 #include "main.h"
 #include "mic_gain.h"
+#include "vfo.h"
 
 static char *title="Microphone Gain";
 
@@ -50,29 +51,30 @@ static gboolean mic_gain_draw_cb(GtkWidget *widget,cairo_t *cr,gpointer data) {
 
   cairo_set_line_width(cr,1.0);
 
-  cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
+  SetColour(cr, BACKGROUND);
   cairo_rectangle(cr,0,0,width,height);
   cairo_fill(cr);
 
   double v=radio->transmitter->mic_gain+10.0; // move from rabd -10..50 to range 0..60
   x=(bar_width/60.0)*v;
 
-  cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+  SetColour(cr, BOX_ON);
   cairo_rectangle(cr,5,0,x,(height/2)-1);
   cairo_fill(cr);
 
-  cairo_set_source_rgb(cr, 0.25, 0.25, 0.25);
+  SetColour(cr, TEXT_B);
   cairo_move_to(cr,5,height/2);
   cairo_line_to(cr,width-5,height/2);
   cairo_stroke(cr);
 
-  cairo_set_source_rgb(cr, 0.25, 0.25, 0.25);
+  SetColour(cr, TEXT_B);
   x=(10.0/60.0)*(double)bar_width;
   cairo_move_to(cr,x+5.0,(double)(height/2)-8.0);
   cairo_line_to(cr,x+5.0,height/2-1);
   cairo_stroke(cr);
 
-  cairo_set_source_rgb(cr, 0.25, 0.25, 0.25);
+  SetColour(cr, TEXT_B);
+  cairo_select_font_face(cr, "Noto Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);  
   cairo_set_font_size(cr,10);
   cairo_text_extents(cr, title, &extents);
   sprintf(t,"%s (%ddB)",title,(int)radio->transmitter->mic_gain);

@@ -223,7 +223,7 @@ void update_tx_panadapter(RADIO *r) {
       
       cairo_set_font_size(cr, 12); 
       
-      SetColour(cr, TEXT_C);
+      SetColour(cr, TEXT_A);
       sprintf(text,"%.1f W",tx->fwd);
       cairo_move_to(cr, 206, 34);
       cairo_show_text(cr, text);
@@ -259,7 +259,11 @@ void update_tx_panadapter(RADIO *r) {
       if(isTransmitting(radio)) {
         SetColour(cr, WARNING);
       } else {
-        SetColour(cr, TEXT_C);
+        if(tx->rx->split) {
+          SetColour(cr, TEXT_A);
+        } else {
+          SetColour(cr, TEXT_B);          
+        }
       }
       cairo_set_font_size(cr, 20);
       cairo_move_to(cr,((double)width/2.0)+2.0,18.0);
@@ -268,7 +272,7 @@ void update_tx_panadapter(RADIO *r) {
     
     if(radio->discovered->device==DEVICE_HERMES_LITE2) {   
       cairo_set_font_size(cr, 12);       
-      SetColour(cr, TEXT_C);
+      SetColour(cr, TEXT_A);
       sprintf(text,"%2.0f degC",tx->temperature);
       cairo_move_to(cr, 220, height-8);
       cairo_show_text(cr, text);
@@ -277,7 +281,7 @@ void update_tx_panadapter(RADIO *r) {
     if(radio->discovered->protocol==PROTOCOL_SOAPYSDR) {   
       if(radio->discovered->info.soapy.has_temp) {
         cairo_set_font_size(cr, 12);       
-        SetColour(cr, TEXT_C);
+        SetColour(cr, TEXT_A);
         int y=height-40;
         for (size_t i = 0; i < radio->discovered->info.soapy.sensors; i++) {
           if(strstr(radio->discovered->info.soapy.sensor[i],"temp")!=NULL) {

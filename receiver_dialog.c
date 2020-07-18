@@ -1020,6 +1020,14 @@ void update_receiver_dialog(RECEIVER *rx) {
     gtk_widget_set_sensitive(rx->local_audio_b, TRUE);
   }
 
+  /*
+  if(rx->subrx_enable) {
+    gtk_combo_box_set_button_sensitivity(rx->audio_channels_cb, GTK_SENSITIVITY_OFF);    
+  } else {
+    gtk_combo_box_set_button_sensitivity(rx->audio_channels_cb, GTK_SENSITIVITY_ON);    
+  }
+  */
+
   g_signal_handler_unblock(G_OBJECT(rx->local_audio_b),rx->local_audio_signal_id);
   g_signal_handler_unblock(G_OBJECT(rx->audio_choice_b),rx->audio_choice_signal_id);
 

@@ -95,7 +95,7 @@
 #define CWDAEMON_MORSE_WEIGHTING_MAX           50
 
 #define CWDAEMON_NETWORK_PORT_DEFAULT                  6789
-#define CWDAEMON_AUDIO_SYSTEM_DEFAULT      CW_AUDIO_PA /* Console buzzer, from libcw.h. */
+#define CWDAEMON_AUDIO_SYSTEM_DEFAULT      CW_AUDIO_NULL /* Console buzzer, from libcw.h. */
 #define CWDAEMON_VERBOSITY_DEFAULT     CWDAEMON_VERBOSITY_W /* Threshold of verbosity of debug strings. */
 
 #define CWDAEMON_USECS_PER_MSEC         1000 /* Just to avoid magic numbers. */
@@ -965,7 +965,7 @@ void cwdaemon_handle_escaped_request(char *request)
 				cwdaemon_close_libcw_output();
 				if (cwdaemon_open_libcw_output(CW_AUDIO_NULL)) {
 					printf("fall back to \"Null\" sound system");
-					current_audio_system = CW_AUDIO_PA;
+					current_audio_system = CW_AUDIO_NULL;
 					has_audio_output = true;
 				} else {
 					printf(
@@ -1156,7 +1156,7 @@ void cwdaemon_keyingevent(__attribute__((unused)) void *arg, int keystate)
   g_mutex_unlock(&cwdaemon_mutex);   
 	inactivity_seconds = 0;
 
-	printf("keying event \"%d\"\n", keystate);
+	//printf("keying event \"%d\"\n", keystate);
 
 	return;
 }

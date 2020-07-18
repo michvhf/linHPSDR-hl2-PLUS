@@ -72,6 +72,7 @@ typedef struct _vfo_data {
   GtkWidget *bmk_b;
   GtkWidget *ctun_b;
   GtkWidget *bpsk_b;
+  GtkWidget *ant_b;
   GtkWidget *rit_b;
   GtkWidget *rit_value;
   GtkWidget *xit_b;
