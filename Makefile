@@ -26,7 +26,7 @@ AUDIO_LIBS=-lasound -lpulse-simple -lpulse -lpulse-mainloop-glib -lsoundio
 #	sudo apt-get install soapysdr-module-rtlsdr
 #	sudo apt-get install soapysdr-module-lms7
 #
-#SOAPYSDR_INCLUDE=SOAPYSDR
+SOAPYSDR_INCLUDE=SOAPYSDR
 
 ifeq ($(SOAPYSDR_INCLUDE),SOAPYSDR)
 SOAPYSDR_OPTIONS=-D SOAPYSDR
@@ -70,7 +70,7 @@ MIDI_OBJS= alsa_midi.o midi2.o midi3.o midi_dialog.o
 MIDI_LIBS= -lasound
 endif
 
-CFLAGS=	-g -Wno-deprecated-declarations
+CFLAGS=	-g -Wno-deprecated-declarations -O3
 OPTIONS=  $(MIDI_OPTIONS) $(AUDIO_OPTIONS)  $(SOAPYSDR_OPTIONS) \
          $(CWDAEMON_OPTIONS)  $(OPENGL_OPTIONS) \
          -D GIT_DATE='"$(GIT_DATE)"' -D GIT_VERSION='"$(GIT_VERSION)"'

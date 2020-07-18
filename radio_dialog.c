@@ -1010,7 +1010,6 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
   gtk_container_add(GTK_CONTAINER(config_frame),config_grid);
   gtk_grid_attach(GTK_GRID(grid),config_frame,col,row++,1,1);
 
-#ifndef SOAPYSDR
   // SWR alarm threshold
   GtkWidget *swr_alarm_label=gtk_label_new("SWR alarm at ");
   gtk_widget_show(swr_alarm_label);
@@ -1034,7 +1033,6 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
     gtk_grid_attach(GTK_GRID(config_grid),temperature_alarm_b,3,0,1,1);
     g_signal_connect(temperature_alarm_b,"value_changed",G_CALLBACK(temperature_alarm_changed_cb),radio);
   }
-#endif
 
   GtkWidget *audio_frame=gtk_frame_new("Audio");
   GtkWidget *audio_grid=gtk_grid_new();

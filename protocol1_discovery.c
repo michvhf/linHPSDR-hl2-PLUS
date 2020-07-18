@@ -165,6 +165,7 @@ g_print("discover_receive_thread\n");
                     discovered[devices].protocol=PROTOCOL_1;
                     version=buffer[9]&0xFF;                    
                     sprintf(discovered[devices].software_version,"%d",version);
+ 
                     switch(buffer[10]&0xFF) {
                         case OLD_DEVICE_METIS:
                             discovered[devices].device=DEVICE_METIS;
@@ -211,7 +212,15 @@ g_print("discover_receive_thread\n");
                               strcpy(discovered[devices].name,"Hermes Lite V2");
 			                        discovered[devices].device = DEVICE_HERMES_LITE2;
                               // HL2 send max supported receveirs in discovery response.
-                              discovered[devices].supported_receivers=buffer[0x13];                    
+                              discovered[devices].supported_receivers=buffer[0x13];   
+                              int patch = buffer[0x15]&0xFF; 
+                              printf("Patch num = %d\n", patch); 
+                              char gateware_patch[2];
+                              sprintf(gateware_patch, "%d", patch);
+                              int char_len = strlen(discovered[devices].software_version);
+                              discovered[devices].software_version[char_len] = 'p';                              
+                              discovered[devices].software_version[char_len+1] = gateware_patch[0];                                
+                              discovered[devices].software_version[char_len+2] = '\0';
 			                      }                            
                             discovered[devices].supported_transmitters=1;
                             discovered[devices].adcs=1;

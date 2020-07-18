@@ -1206,7 +1206,7 @@ g_print("create_radio for %s %d\n",d->name,d->device);
   r->which_audio_backend=0;
 
   r->swr_alarm_value = 2.0;
-  r->temperature_alarm_value = 42;  
+  r->temperature_alarm_value = 50;  
   r->midi_enabled = FALSE;
   sprintf(r->midi_filename,"%s/.local/share/linhpsdr/midi.props", g_get_home_dir());
   

@@ -760,6 +760,8 @@ void update_frequency(RECEIVER *rx) {
 long long receiver_move_a(RECEIVER *rx,long long hz,gboolean round) {
   long long delta=0LL;
   if(!rx->locked) {
+    // Stop scroll to negative number
+    if (rx->frequency_a - hz < 0) return 0;
     if(rx->ctun) {
       delta=rx->ctun_frequency;
       rx->ctun_frequency=rx->ctun_frequency+hz;
@@ -781,6 +783,8 @@ long long receiver_move_a(RECEIVER *rx,long long hz,gboolean round) {
 
 void receiver_move_b(RECEIVER *rx,long long hz,gboolean b_only,gboolean round) {
   if(!rx->locked) {
+    // Stop scroll to negative number
+    if ((rx->frequency_b + hz) <= 0) return;
     long long f=rx->frequency_b;
     switch(rx->split) {
       case SPLIT_OFF:
@@ -803,13 +807,13 @@ void receiver_move_b(RECEIVER *rx,long long hz,gboolean b_only,gboolean round) {
         } else {
           rx->frequency_b=rx->frequency_b+hz;
         }
-	if(rx->subrx!=NULL) {
-  	  rx->ctun_min=rx->frequency_a-(rx->sample_rate/2);
-          rx->ctun_max=rx->frequency_a+(rx->sample_rate/2);
-          if(rx->frequency_b<rx->ctun_min || rx->frequency_b>rx->ctun_max) {
-            rx->frequency_b=f;
-          }
-	}
+        if(rx->subrx!=NULL) {
+            rx->ctun_min=rx->frequency_a-(rx->sample_rate/2);
+                rx->ctun_max=rx->frequency_a+(rx->sample_rate/2);
+                if(rx->frequency_b<rx->ctun_min || rx->frequency_b>rx->ctun_max) {
+                  rx->frequency_b=f;
+                }
+        }
         if(!b_only) {
           receiver_move_a(rx,hz,round);
           frequency_changed(rx);
@@ -822,13 +826,13 @@ void receiver_move_b(RECEIVER *rx,long long hz,gboolean b_only,gboolean round) {
         } else {
           rx->frequency_b=rx->frequency_b-hz;
         }
-	if(rx->subrx!=NULL) {
-  	  rx->ctun_min=rx->frequency_a-(rx->sample_rate/2);
-          rx->ctun_max=rx->frequency_a+(rx->sample_rate/2);
-          if(rx->frequency_b<rx->ctun_min || rx->frequency_b>rx->ctun_max) {
-            rx->frequency_b=f;
-          }
-	}
+        if(rx->subrx!=NULL) {
+            rx->ctun_min=rx->frequency_a-(rx->sample_rate/2);
+                rx->ctun_max=rx->frequency_a+(rx->sample_rate/2);
+                if(rx->frequency_b<rx->ctun_min || rx->frequency_b>rx->ctun_max) {
+                  rx->frequency_b=f;
+                }
+        }
         if(!b_only) {
           receiver_move_a(rx,-hz,round);
           frequency_changed(rx);
@@ -890,7 +894,9 @@ void receiver_move_to(RECEIVER *rx,long long hz) {
       rx->ctun_frequency=f + cw_offset;
       delta=rx->ctun_frequency-delta;
     } else {
-      if((rx->split==SPLIT_ON) && (rx->mode_a==CWL || rx->mode_a==CWU)) {
+      if((rx->split==SPLIT_ON) && 
+         (rx->mode_a==CWL || rx->mode_a==CWU ||
+          rx->mode_a==USB || rx->mode_a==LSB)) {
         rx->frequency_b=f + cw_offset; 
       } else {
         delta=rx->frequency_a;

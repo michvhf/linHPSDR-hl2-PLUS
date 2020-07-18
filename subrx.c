@@ -39,11 +39,11 @@
 void subrx_frequency_changed(RECEIVER *rx) {
   SUBRX *subrx=(SUBRX *)rx->subrx;
   gint64 offset=rx->frequency_b-rx->frequency_a;
-  if(rx->mode_b==CWU) {
-    offset+=(gint64)radio->cw_keyer_sidetone_frequency;
-  } else if(rx->mode_b==CWL) {
-    offset-=(gint64)radio->cw_keyer_sidetone_frequency;
-  }
+  //if(rx->mode_b==CWU) {
+  //  offset+=(gint64)radio->cw_keyer_sidetone_frequency;
+  //} else if(rx->mode_b==CWL) {
+  //  offset-=(gint64)radio->cw_keyer_sidetone_frequency;
+  //}
   SetRXAShiftFreq(subrx->channel, (double)offset);
   RXANBPSetShiftFrequency(subrx->channel, (double)offset);
   SetRXAShiftRun(subrx->channel, 1);

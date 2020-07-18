@@ -122,9 +122,9 @@ void update_radio_info(RECEIVER *rx) {
 
   if(info==NULL) return;
 
-  if (radio->discovered->device == DEVICE_HERMES_LITE2) {
+  //if (radio->discovered->device == DEVICE_HERMES_LITE2) {
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(info->adc_overload_b),radio->adc_overload && (!isTransmitting(radio)));
-  }
+  //}
 
 
   if (radio->discovered->device == DEVICE_HERMES_LITE2) {

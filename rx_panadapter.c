@@ -412,19 +412,15 @@ void update_rx_panadapter(RECEIVER *rx) {
         cw_offset=+radio->cw_keyer_sidetone_frequency;
       }  
     }
-            
-    if(rx->split==SPLIT_ON) {    
-      if(rx->mode_a==CWU || rx->mode_a==CWL) {
-        
-        SetColour(cr, WARNING);        
-
-         i=(int)(((double)rx->frequency_b-(double)min_display)/rx->hz_per_pixel);
-          i -= cw_offset / rx->hz_per_pixel;
-          cairo_move_to(cr,(double)i,0.0);
-          cairo_line_to(cr,(double)i,(double)display_height-20);
-          cairo_stroke(cr);        
-      }
-  }
+    // VFO B/sub rx filter        
+    if(rx->subrx!=NULL) { 
+      i=(int)(((double)rx->frequency_b-(double)min_display)/rx->hz_per_pixel);         
+      filter_left = i + (rx->filter_low_a / rx->hz_per_pixel);
+      filter_right = i + (rx->filter_high_a / rx->hz_per_pixel);
+      cairo_set_source_rgba (cr, 0.5, 0.5, 0.5, 0.75);    
+      cairo_rectangle(cr, filter_left, 0.0, filter_right-filter_left, (double)display_height);
+      cairo_fill(cr);
+    }
     
     cairo_set_line_width (cr, 1);
     // plot the levels
@@ -608,6 +604,16 @@ void update_rx_panadapter(RECEIVER *rx) {
     cairo_move_to(cr,(double)(rx->pixels/2.0)-(double)rx->pan+(rx->ctun_offset/rx->hz_per_pixel) - (cw_offset/rx->hz_per_pixel),0.0);
     cairo_line_to(cr,(double)(rx->pixels/2.0)-(double)rx->pan+(rx->ctun_offset/rx->hz_per_pixel) - (cw_offset/rx->hz_per_pixel),(double)display_height-20);
     cairo_stroke(cr);    
+    
+    // Frequency marker vfo b    
+    if(rx->subrx!=NULL) {   
+      i=(int)(((double)rx->frequency_b-(double)min_display)/rx->hz_per_pixel);
+      i -= cw_offset / rx->hz_per_pixel;
+      SetColour(cr, TEXT_C);        
+      cairo_move_to(cr,(double)i,0.0);
+      cairo_line_to(cr,(double)i,(double)display_height-20);
+      cairo_stroke(cr);     
+    }
     
     // signal
     double s2;

@@ -202,6 +202,40 @@ static void aswapb_cb(GtkButton *widget,gpointer user_data) {
   vfo_aswapb(rx);
 }
 
+static void EnableSplitSubRX(gpointer user_data) {
+  RECEIVER *rx=(RECEIVER *)user_data;
+  // Split mode in CW, RX on VFO A, TX on VFO B.
+  // When mode turned on, default to VFO A +1 kHz
+  if (rx->mode_a == CWL || rx->mode_a == CWU) {
+    // Most pile-ups start with UP 1
+    rx->frequency_b = rx->frequency_a + 1000;
+  }
+  else if (rx->mode_a == LSB || rx->mode_a == USB) {
+    rx->frequency_b = rx->frequency_a + 5000;    
+  }
+  else {
+    return;
+  }
+  rx->mode_b=rx->mode_a;
+  if(!rx->subrx_enable) {
+    create_subrx(rx);
+    rx->subrx_enable=TRUE;
+  }
+}
+
+static void DisableSplitSubRX(gpointer user_data) {
+  RECEIVER *rx=(RECEIVER *)user_data;
+  if (rx->mode_a == CWL || rx->mode_a ==CWU ||
+      rx->mode_a == LSB || rx->mode_a == USB) {
+    if(rx->subrx_enable) {
+      rx->subrx_enable=FALSE;
+      destroy_subrx(rx);
+      rx->subrx=NULL;
+      printf("Destroy subrx subrx\n");
+    }
+  } 
+}
+
 static void split_b_cb(GtkToggleButton *widget,gpointer user_data) {
   RECEIVER *rx=(RECEIVER *)user_data;
   rx->split=rx->split==SPLIT_OFF?SPLIT_ON:SPLIT_OFF;
@@ -231,21 +265,16 @@ void split_cb(GtkWidget *menu_item,gpointer data) {
   g_signal_handlers_block_by_func(choice->button,G_CALLBACK(split_b_cb),rx);
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(choice->button),rx->split!=SPLIT_OFF);
   g_signal_handlers_unblock_by_func(choice->button,G_CALLBACK(split_b_cb),rx);
-  frequency_changed(rx);
+
   if(radio->transmitter->rx==rx) {
     switch(rx->split) {
       case SPLIT_OFF:
         transmitter_set_mode(radio->transmitter,rx->mode_a);
+        DisableSplitSubRX(rx);
         break;
       case SPLIT_ON:
-        // Split mode in CW, RX on VFO A, TX on VFO B.
-        // When mode turned on, default to VFO A +1 kHz
-        if (rx->mode_a == CWL || rx->mode_a ==CWU) {
-          // Most pile-ups start with UP 1
-          rx->frequency_b = rx->frequency_a + 1000;
-          rx->mode_b=rx->mode_a;
-        }
         transmitter_set_mode(radio->transmitter,rx->mode_b);
+        EnableSplitSubRX(rx);        
         break;
       case SPLIT_SAT:
       case SPLIT_RSAT:
@@ -253,15 +282,34 @@ void split_cb(GtkWidget *menu_item,gpointer data) {
         break;
     }
   }
+  frequency_changed(rx);  
+  update_vfo(rx);  
   g_free(choice);
 }
 
-static gboolean split_b_press_cb(GtkWidget *widget,GdkEvent *event,gpointer user_data) {
+static gboolean split_b_press_cb(GtkWidget *widget,GdkEvent *event, gpointer user_data) {
   RECEIVER *rx=(RECEIVER *)user_data;
   GtkWidget *menu=gtk_menu_new();
   GtkWidget *menu_item;
   CHOICE *choice;
+  
   switch(((GdkEventButton*)event)->button) {
+    case 1:  // LEFT
+      if(rx->split!=SPLIT_OFF) {
+        transmitter_set_mode(radio->transmitter,rx->mode_a);
+        DisableSplitSubRX(rx);
+        rx->split=SPLIT_OFF;
+      } else {
+        EnableSplitSubRX(rx); 
+        transmitter_set_mode(radio->transmitter,rx->mode_b);
+        rx->split=SPLIT_ON;
+      }  
+      frequency_changed(rx);  
+      update_vfo(rx);      
+        
+      return TRUE;
+      break; 
+      
     case 3:  // RIGHT
       menu=gtk_menu_new();
       menu_item=gtk_menu_item_new_with_label("Off");
@@ -298,6 +346,7 @@ static gboolean split_b_press_cb(GtkWidget *widget,GdkEvent *event,gpointer user
 #else
       gtk_menu_popup(GTK_MENU(menu),NULL,NULL,NULL,NULL,event->button,event->time);
 #endif
+      frequency_changed(rx); 
       return TRUE;
       break;
   }
@@ -793,7 +842,6 @@ static gboolean rit_b_press_event_cb(GtkWidget *widget,GdkEventButton *event,gpo
   return FALSE;
 }
 
-
 static gboolean rit_b_press_cb(GtkWidget *widget,GdkEvent *event,gpointer user_data) {
   RECEIVER *rx=(RECEIVER *)user_data;
   GtkWidget *menu=gtk_menu_new();
@@ -1154,7 +1202,6 @@ static gboolean agcgain_release_cb(GtkWidget *widget,GdkEventButton *event,gpoin
   update_vfo(rx);
   return TRUE;
 }
-
 
 static gboolean agcgain_scale_scroll_event_cb(GtkWidget *widget,GdkEventScroll *event,gpointer data) {
   RECEIVER *rx=(RECEIVER *)data;
