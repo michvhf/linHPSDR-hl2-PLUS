@@ -1531,7 +1531,7 @@ void ozy_send_buffer() {
         if(tx_mode!=CWU && tx_mode!=CWL) {
           // output_buffer[C1]|=0x00;
         } else {
-          if(radio->tune || radio->vox || !radio->cw_keyer_internal || !radio->cwdaemon) {
+          if(radio->tune || radio->vox || !radio->cw_keyer_internal) {
             output_buffer[C1]|=0x00;
           } else {
             output_buffer[C1]|=0x01;
@@ -1539,17 +1539,6 @@ void ozy_send_buffer() {
         }
         output_buffer[C2]=radio->cw_keyer_sidetone_volume;
         
-        //CWX enable/disable
-	#ifdef CWDAEMON 
-        if(radio->discovered->device==DEVICE_HERMES_LITE2) {
-          if(radio->cwdaemon) {
-            radio->cw_keyer_ptt_delay = 0x1;
-          }
-          else {
-            radio->cw_keyer_ptt_delay = 0x0;
-          }
-        }
-	#endif
         output_buffer[C3]=radio->cw_keyer_ptt_delay;
         output_buffer[C4]=0x00;
         break;
