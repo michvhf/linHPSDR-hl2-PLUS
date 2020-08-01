@@ -243,9 +243,11 @@ void update_tx_panadapter(RADIO *r) {
         cairo_show_text(cr, text);
       }
   
-      sprintf(text,"ALC: %2.1f dB",tx->alc);
-      cairo_move_to(cr, 206, 80);
-      cairo_show_text(cr, text);
+      if(tx->rx->mode_a!=CWU && tx->rx->mode_a!=CWL) {
+        sprintf(text,"ALC: %2.1f dB",tx->alc);
+        cairo_move_to(cr, 206, 80);
+        cairo_show_text(cr, text);
+      }
     }
 
     // frequency
