@@ -53,7 +53,8 @@ enum {
   NONE=0,
   ALEX,
   APOLLO,
-  N2ADR
+  N2ADR,
+  HL2_MRF101
 };
 
 enum {
@@ -101,6 +102,7 @@ typedef struct _radio {
   #ifdef CWDAEMON
   gint cwdaemon_running;
   gint cwd_port;
+  gboolean cwd_sidetone;
 
   struct sockaddr_in request_addr;
   socklen_t request_addrlen;

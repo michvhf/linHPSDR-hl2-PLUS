@@ -153,6 +153,12 @@ g_print("radio_save_state: %s\n",filename);
   setProperty("radio.cw_keyer_hang_time",value);
   sprintf(value,"%d",radio->cw_breakin);
   setProperty("radio.cw_breakin",value);
+  #ifdef CWDAEMON
+  sprintf(value,"%d",radio->cwd_port);
+  setProperty("radio.cwd_port",value);  
+  sprintf(value,"%d",radio->cwd_sidetone);
+  setProperty("radio.cwd_sidetone",value);    
+  #endif
   sprintf(value,"%d",radio->local_microphone);
   setProperty("radio.local_microphone",value);
   sprintf(value,"%d",radio->mic_boost);
@@ -334,6 +340,12 @@ void radio_restore_state(RADIO *radio) {
   if(value!=NULL) radio->cw_keyer_hang_time=atoi(value);
   value=getProperty("radio.cw_breakin");
   if(value!=NULL) radio->cw_breakin=atoi(value);
+  #ifdef CWDAEMON
+  value=getProperty("radio.cwd_sidetone");
+  if(value!=NULL) radio->cwd_sidetone=atoi(value);  
+  value=getProperty("radio.cwd_port");
+  if(value!=NULL) radio->cwd_port=atoi(value);   
+  #endif  
 
   for(int i=0;i<radio->discovered->adcs;i++) {
     sprintf(name,"radio.adc[%d].filters",i);
@@ -400,6 +412,8 @@ void radio_restore_state(RADIO *radio) {
   if(value!=NULL) radio->mic_linein=atoi(value);
   value=getProperty("radio.linein_gain");
   if(value!=NULL) radio->linein_gain=atoi(value);
+  value=getProperty("radio.filter_board");
+  if(value!=NULL) radio->filter_board=atoi(value);  
   value=getProperty("radio.region");
   if(value!=NULL) radio->region=atoi(value);
   value=getProperty("radio.classE");
@@ -1122,6 +1136,7 @@ g_print("create_radio for %s %d\n",d->name,d->device);
   #ifdef CWDAEMON
   r->cwdaemon_running=FALSE;
   r->cwd_port = 51000;
+  r->cwd_sidetone = FALSE;
   #endif
   
   r->display_filled=TRUE;
