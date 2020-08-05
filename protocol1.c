@@ -467,8 +467,8 @@ static void process_control_bytes() {
   //previous_dot=radio->dot;
   //previous_dash=radio->dash;
   radio->ptt=(control_in[0]&0x01)==0x01;
-  //radio->dash=(control_in[0]&0x02)==0x02;
-  //radio->dot=(control_in[0]&0x04)==0x04;
+  radio->dash=(control_in[0]&0x02)==0x02;
+  radio->dot=(control_in[0]&0x04)==0x04;
 
   radio->local_ptt=radio->ptt;
   if(tx_mode==CWL || tx_mode==CWU) {
@@ -1127,6 +1127,10 @@ void ozy_send_buffer() {
 
 // TODO - add Alex TX relay, duplex, receivers Mercury board frequency
     output_buffer[C4]=0x04;  // duplex
+    
+    if (radio->diversity_mixers > 0) output_buffer[C4] |= 0x80;
+          
+    
 #ifdef PURESIGNAL
     nreceivers=(RECEIVERS*2)-1;
     nreceivers+=1; // for PS TX Feedback

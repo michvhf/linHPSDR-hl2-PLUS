@@ -1225,7 +1225,7 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
   #ifdef CWDAEMON
   else {
     if (radio->discovered->device == DEVICE_HERMES_LITE2) { 
-      GtkWidget *cw_cwd_sidetone_label = gtk_label_new("cwdaemon sidetone:");
+      GtkWidget *cw_cwd_sidetone_label = gtk_label_new("CWdaemon sidetone:");
       gtk_widget_show(cw_cwd_sidetone_label);
       gtk_grid_attach(GTK_GRID(cw_grid),cw_cwd_sidetone_label,x++,y,1,1);
 

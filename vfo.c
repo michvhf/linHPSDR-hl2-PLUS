@@ -480,6 +480,37 @@ static void subrx_b_cb(GtkToggleButton *widget,gpointer user_data) {
   update_vfo(rx);
 }
 
+static void div_b_cb(GtkToggleButton *widget,gpointer user_data) {
+  RECEIVER *rx=(RECEIVER *)user_data;
+
+  g_print("Diversity rx %d\n", rx->diversity);
+  if(rx->diversity) {
+    //Delete receiver
+    int this_mixer = rx->dmix_id;
+    delete_diversity_mixer(radio->divmixer[this_mixer]);
+    rx->diversity = FALSE;
+  } else { 
+    g_print("Add new rx\n");
+    int new_hidden_rx = add_receiver(radio, FALSE);            
+    if (new_hidden_rx > 0) {
+      g_print("-----------Hidden RX added %d\n", new_hidden_rx);
+      int dmix_num = add_diversity_mixer(radio, rx, radio->receiver[new_hidden_rx]);
+      if (dmix_num > -1) {
+        g_print("Vis mix chan %d\n", rx->dmix_id);
+        g_print("Hid mix chan %d\n", radio->receiver[new_hidden_rx]->dmix_id); 
+        g_print("channel %d\n", radio->divmixer[dmix_num]->rx_hidden->channel);            
+        rx->diversity = TRUE;
+      }
+    } else {
+      g_print("Failed to add new rx\n");
+    }
+  }    
+  g_print("Diversity rx %d\n", rx->diversity);  
+}
+
+
+
+
 static void lock_b_cb(GtkToggleButton *widget,gpointer user_data) {
   RECEIVER *rx=(RECEIVER *)user_data;
   rx->locked=gtk_toggle_button_get_active(widget);
@@ -1556,7 +1587,7 @@ GtkWidget *create_vfo(RECEIVER *rx) {
   x=480;
   y=36;
 
-  GtkWidget *agcgain_label=gtk_label_new("AGC Gain");
+  GtkWidget *agcgain_label=gtk_label_new("AGC GAIN");
   gtk_widget_set_name(agcgain_label,"agcgain-text");
   gtk_layout_put(GTK_LAYOUT(v->vfo),agcgain_label,x,y);
 
@@ -1781,7 +1812,18 @@ GtkWidget *create_vfo(RECEIVER *rx) {
   g_signal_connect(v->bmk_b, "button-press-event", G_CALLBACK(bmk_b_pressed_cb),rx);
   gtk_layout_put(GTK_LAYOUT(v->vfo),v->bmk_b,x,y);
   x=x+40;
-
+  
+  if(radio->discovered->protocol == PROTOCOL_1) {  
+    v->div_b=gtk_toggle_button_new_with_label("DIV");
+    gtk_widget_set_name(v->div_b,"vfo-toggle");
+    gtk_toggle_button_set_mode(GTK_TOGGLE_BUTTON(v->div_b),FALSE);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(v->div_b),rx->diversity);
+    gtk_widget_set_size_request(v->div_b,35,6);
+    g_signal_connect(v->div_b, "toggled", G_CALLBACK(div_b_cb),rx);
+    gtk_layout_put(GTK_LAYOUT(v->vfo),v->div_b,x,y);
+    x=x+40;
+  }
+  
   gtk_widget_show_all(v->vfo);
 
   g_object_set_data ((GObject *)v->vfo,"vfo_data",v);
@@ -1944,6 +1986,12 @@ void update_vfo(RECEIVER *rx) {
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(v->dup_b),rx->duplex);
   g_signal_handlers_unblock_by_func(v->dup_b,G_CALLBACK(dup_b_cb),rx);
 
+  // update RXANT button
+  if(radio->discovered->device==DEVICE_HERMES_LITE2) {  
+    g_signal_handlers_block_by_func(v->ant_b,G_CALLBACK(ant_b_cb),rx);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(v->ant_b),radio->adc[0].antenna!=0);
+    g_signal_handlers_unblock_by_func(v->ant_b,G_CALLBACK(ant_b_cb),rx);
+  }
   // update BPSK button
   //g_signal_handlers_block_by_func(v->bpsk_b,G_CALLBACK(bpsk_b_cb),rx);
   //gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(v->bpsk_b),rx->bpsk_enable);
@@ -1978,7 +2026,13 @@ void update_vfo(RECEIVER *rx) {
   g_signal_handlers_block_by_func(v->subrx_b,G_CALLBACK(subrx_b_cb),rx);
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(v->subrx_b),rx->subrx!=NULL);
   g_signal_handlers_unblock_by_func(v->subrx_b,G_CALLBACK(subrx_b_cb),rx);
-
+  
+  // Diversity mixer
+  if(radio->discovered->protocol == PROTOCOL_1) {
+    g_signal_handlers_block_by_func(v->div_b, G_CALLBACK(div_b_cb), rx);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(v->div_b), rx->diversity);
+    g_signal_handlers_unblock_by_func(v->div_b, G_CALLBACK(div_b_cb), rx);  
+  }
 }
 
 

@@ -1271,12 +1271,68 @@ static void full_rx_buffer(RECEIVER *rx) {
 
 }
 
+void full_diviqrx_buffer(RECEIVER *rx) {
+  int error;
+
+  if(isTransmitting(radio) && (!rx->duplex)) return;
+
+  // noise blanker works on origianl IQ samples
+  if(rx->nb) {
+     xanbEXT (rx->channel, rx->diviq_input_buffer, rx->diviq_input_buffer);
+  }
+  if(rx->nb2) {
+     xnobEXT (rx->channel, rx->diviq_input_buffer, rx->diviq_input_buffer);
+  }
+
+  g_mutex_lock(&rx->mutex);
+  fexchange0(rx->channel, rx->diviq_input_buffer, rx->audio_output_buffer, &error);
+  //if(error!=0 && error!=-2) {
+  if(error!=0) {    
+    fprintf(stderr,"full_rx_buffer: channel=%d fexchange0: error=%d\n",rx->channel,error);
+  }
+
+  if(rx->subrx_enable) {
+    subrx_iq_buffer(rx);
+  }
+
+  Spectrum0(1, rx->channel, 0, 0, rx->diviq_input_buffer);
+  process_rx_buffer(rx);
+  g_mutex_unlock(&rx->mutex);
+
+}
+
+
 void add_iq_samples(RECEIVER *rx,double i_sample,double q_sample) {
   rx->iq_input_buffer[rx->samples*2]=i_sample;
   rx->iq_input_buffer[(rx->samples*2)+1]=q_sample;
   rx->samples=rx->samples+1;
   if(rx->samples>=rx->buffer_size) {
-    full_rx_buffer(rx);
+    // If diversity mixer active, WDSP diversity mixer works on a 
+    // seperate channel to the rx and must all be done pre normal RX dsp
+    if (radio->divmixer[rx->dmix_id] != NULL) {
+      int mixer = rx->dmix_id;
+      //g_print("Mixer %d\n", mixer);
+      // Diversity uses 2 rx channels, if the order of these is processed incorrectly, WDSP
+      // will be working with 1 packet ahead/behind.
+      // Main RX # is less than hidden rx
+      if (radio->divmixer[mixer]->rx_visual->channel < radio->divmixer[mixer]->rx_hidden->channel) {
+        if (rx == radio->divmixer[mixer]->rx_hidden) { 
+          diversity_mix_full_buffers(radio->divmixer[mixer]);
+        } else {
+          diversity_add_buffer(radio->divmixer[mixer]);
+        }
+      } else {
+        // Main rx number is greater than the hidden rx
+        if (rx == radio->divmixer[mixer]->rx_visual) {
+          diversity_mix_full_buffers(radio->divmixer[mixer]);        
+        } else {
+          diversity_add_buffer(radio->divmixer[mixer]);         
+        }
+      }
+     } else {
+      // Non diversity, normal iq packet processing
+      full_rx_buffer(rx);
+    }    
     rx->samples=0;
   }
 
@@ -1496,7 +1552,8 @@ g_print("%s: %d\n",__FUNCTION__,zoom);
   receiver_init_analyzer(rx);
 }
 
-RECEIVER *create_receiver(int channel,int sample_rate) {
+
+RECEIVER *create_receiver(int channel,int sample_rate, gboolean show_rx) {
   RECEIVER *rx=g_new0(RECEIVER,1);
   char name [80];
   char *value;
@@ -1641,6 +1698,8 @@ g_print("create_receiver: channel=%d frequency_min=%ld frequency_max=%ld\n", cha
 #endif
 fprintf(stderr,"create_receiver: buffer_size=%d\n",rx->buffer_size);
   rx->iq_input_buffer=g_new0(gdouble,2*rx->buffer_size);
+  rx->diviq_input_buffer=g_new0(gdouble,2*rx->buffer_size);
+
 
   rx->audio_buffer_size=480;
   rx->audio_buffer=g_new0(guchar,rx->audio_buffer_size);
@@ -1756,6 +1815,11 @@ fprintf(stderr,"create_receiver: fft_size=%d\n",rx->fft_size);
   rx->subrx_enable=FALSE;
   rx->subrx=NULL;
 
+  rx->diversity = FALSE;
+  rx->diversity_hidden_rx = -1;
+  rx->dmix_id = MAX_DIVERSITY_MIXERS+1;
+
+
   receiver_restore_state(rx);
 
   if(radio->discovered->protocol==PROTOCOL_1) {
@@ -1836,6 +1900,9 @@ g_print("receiver_change_sample_rate: resample_step=%d\n",rx->resample_step);
   SetDisplayAverageMode(rx->channel, 0,  AVERAGE_MODE_LOG_RECURSIVE/*display_average_mode*/);
   calculate_display_average(rx); 
 
+  
+  if (!show_rx) return rx;
+  
   create_visual(rx);
   if(rx->window!=NULL) {
     gtk_widget_show_all(rx->window);

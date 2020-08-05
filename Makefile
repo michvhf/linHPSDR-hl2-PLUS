@@ -134,6 +134,8 @@ xvtr_dialog.c\
 frequency.c\
 error_handler.c\
 radio_info.c\
+diversity_mixer.c\
+diversity_dialog.c\
 rigctl.c \
 bpsk.c \
 subrx.c
@@ -186,6 +188,8 @@ xvtr_dialog.h\
 frequency.h\
 error_handler.h\
 radio_info.h\
+diversity_mixer.h\
+diversity_dialog.h\
 rigctl.h \
 bpsk.h \
 subrx.h
@@ -237,6 +241,8 @@ xvtr_dialog.o\
 frequency.o\
 error_handler.o\
 radio_info.o\
+diversity_mixer.o\
+diversity_dialog.o\
 rigctl.o \
 bpsk.o \
 subrx.o

@@ -78,6 +78,7 @@ typedef struct _vfo_data {
   GtkWidget *xit_b;
   GtkWidget *xit_value;
   GtkWidget *dup_b;
+  GtkWidget *div_b;  
 } VFO_DATA;
 
 #define STEPS 15

@@ -52,6 +52,7 @@
 #ifdef MIDI
 #include "midi_dialog.h"
 #endif
+#include "diversity_dialog.h"
 
 int rx_base=3; // number of tabs before receivers
 
@@ -85,6 +86,10 @@ static gboolean switch_page_event(GtkNotebook *notebook,GtkWidget *page,guint pa
   if(strncmp("TX",text,2)==0) {
     update_transmitter_dialog(radio->transmitter);
   }
+  if(strncmp("DMIX",text,4)==0) {
+    update_transmitter_dialog(radio->transmitter);
+  }  
+  
   return TRUE;
 }
 
@@ -114,6 +119,13 @@ GtkWidget *create_configure_dialog(RADIO *radio,int tab) {
     }
   }
 
+  for(i=0; i < MAX_DIVERSITY_MIXERS; i++) {
+    if(radio->divmixer[i]!=NULL) {
+      g_snprintf((gchar *)&title,sizeof(title),"DMIX-%d",radio->divmixer[i]->id );
+      gtk_notebook_append_page(GTK_NOTEBOOK(notebook),create_diversity_dialog(radio->divmixer[i]),gtk_label_new(title));
+    }
+  }
+
   if(radio->can_transmit) {
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook),create_transmitter_dialog(radio->transmitter),gtk_label_new("TX"));
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook),create_puresignal_dialog(radio->transmitter),gtk_label_new("Pure Signal"));
@@ -138,5 +150,4 @@ GtkWidget *create_configure_dialog(RADIO *radio,int tab) {
   g_signal_connect (notebook,"switch-page",G_CALLBACK(switch_page_event),(gpointer)radio);
 
   return dialog;
-
 }

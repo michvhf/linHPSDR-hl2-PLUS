@@ -47,6 +47,8 @@ typedef struct _receiver {
 
   guint32 iq_sequence;
   gdouble *iq_input_buffer;
+  gdouble *diviq_input_buffer;  
+  
   guint32 audio_sequence;
   gdouble *audio_output_buffer;
   gint audio_buffer_size;
@@ -256,6 +258,11 @@ typedef struct _receiver {
   gulong local_audio_signal_id;
   gulong tx_control_signal_id;
 
+  gboolean diversity; 
+  gint diversity_hidden_rx;
+  gint dmix_id;
+
+
   gint rigctl_port;
   gboolean rigctl_enable;
 
@@ -277,10 +284,12 @@ enum {
   AUDIO_RIGHT_ONLY = 2
 };
 
-extern RECEIVER *create_receiver(int channel,int sample_rate);
+extern RECEIVER *create_receiver(int channel,int sample_rate, gboolean show_rx);
 extern void receiver_update_title(RECEIVER *rx);
 extern void receiver_init_analyzer(RECEIVER *rx);
 extern void add_iq_samples(RECEIVER *r,double left,double right);
+extern void full_diviqrx_buffer(RECEIVER *rx);
+
 extern gboolean receiver_button_press_event_cb(GtkWidget *widget, GdkEventButton *event, gpointer data);
 extern gboolean receiver_button_release_event_cb(GtkWidget *widget, GdkEventButton *event, gpointer data);
 extern gboolean receiver_motion_notify_event_cb(GtkWidget *widget, GdkEventMotion *event, gpointer data);
