@@ -30,6 +30,7 @@
 #define BPSK_CHANNEL 10
 
 #include "diversity_mixer.h"
+#include "band.h"
 
 enum {
   ANAN_10=0,
@@ -198,6 +199,11 @@ typedef struct _radio {
 
   GtkWidget *dialog;
 
+  GtkWidget *oc_rx_b[BANDS * 8];
+  GtkWidget *oc_tx_b[BANDS * 8];  
+  gulong *oc_tx_signal_id;
+  gulong *oc_rx_signal_id;
+  
   ADC adc[2];
   DAC dac[2];
 

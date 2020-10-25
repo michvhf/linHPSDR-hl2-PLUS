@@ -420,9 +420,18 @@ static gboolean update_timer_cb(void *data) {
           fwd_power=tx->alex_reverse_power;
           rev_power=tx->alex_forward_power;
         }
-        constant1=3.3;
-        constant2=1.4;
-        fwd_cal_offset=6;      
+        if (radio->filter_board == HL2_MRF101) {
+          // N2ADR hl2 filter board
+          constant1 = 3.3;
+          constant2 = 1.4;  
+          fwd_cal_offset = 6;     
+        }
+        else {
+          // N2ADR hl2 filter board
+          constant1=3.3;
+          constant2=1.4;  
+          fwd_cal_offset=6;      
+        }
         break;
     }
 
@@ -649,15 +658,6 @@ void full_tx_buffer(TRANSMITTER *tx) {
     g_mutex_unlock((&tx->queue_mutex));
     protocol1_iq_samples(isample, qsample);
   }
-  //}
-  /*
-  else {
-    for (int j=0; j<126; j++) {
-      QueueGet(&isample);
-      QueueGet(&qsample);            
-      protocol1_iq_samples(isample, qsample);
-    }
-  }*/
 }
 
 

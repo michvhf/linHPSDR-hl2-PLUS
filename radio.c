@@ -122,6 +122,8 @@ g_print("radio_save_state: %s\n",filename);
 
   sprintf(value,"%d",radio->model);
   setProperty("radio.model",value);
+  sprintf(value,"%d",radio->filter_board);
+  setProperty("radio.filter_board",value);  
   sprintf(value,"%d",radio->sample_rate);
   setProperty("radio.sample_rate",value);
   sprintf(value,"%d",radio->buffer_size);
@@ -313,10 +315,10 @@ void radio_restore_state(RADIO *radio) {
 
   value=getProperty("radio.model");
   if(value!=NULL) radio->model=atoi(value);
-
+  value=getProperty("radio.filter_board");
+  if(value!=NULL) radio->filter_board=atoi(value);
   value=getProperty("radio.sample_rate");
   if(value!=NULL) radio->sample_rate=atoi(value);
-  
   value=getProperty("radio.meter_calibration");
   if(value) radio->meter_calibration=atof(value);
   value=getProperty("radio.panadapter_calibration");
@@ -527,7 +529,6 @@ void radio_change_audio_backend(RADIO *r,int selected) {
   create_audio(r->which_audio_backend,r->which_audio==USE_SOUNDIO?audio_get_backend_name(r->which_audio_backend):NULL);
 }
 
-
 void vox_changed(RADIO *r) {
   rxtx(radio);
 }
@@ -622,6 +623,8 @@ void delete_wideband(WIDEBAND *w) {
     gtk_widget_destroy(radio->dialog);
     radio->dialog=NULL;
   }
+  protocol1_stop();  
+  protocol1_run();  
 }
 
 void delete_receiver(RECEIVER *rx) {
@@ -985,6 +988,10 @@ void add_transmitter(RADIO *r) {
 int add_wideband(void *data) {
   RADIO *r=(RADIO *)data;
   r->wideband=create_wideband(WIDEBAND_CHANNEL);
+  
+  protocol1_stop();  
+  protocol1_run();
+  
   if(r->discovered->protocol==PROTOCOL_2) {
     protocol2_start_wideband(r->wideband);
   }
@@ -1253,6 +1260,9 @@ g_print("create_radio for %s %d\n",d->name,d->device);
   g_cond_init(&r->ring_buffer_cond);
 
   r->filter_board=ALEX;
+    
+  r->oc_tx_signal_id = g_new0(gulong, BANDS * 8);
+  r->oc_rx_signal_id = g_new0(gulong, BANDS * 8);  
   
   // Hermes lite 2
   r->enable_pa = TRUE;

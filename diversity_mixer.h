@@ -21,7 +21,6 @@
 #define DIVMIXER_H
 
 typedef struct _divmixer {
-  
   gint id; // WDSP mixer ID (limited to 2)
 
   gdouble *iq_output_buffer;
@@ -40,9 +39,6 @@ typedef struct _divmixer {
   
   gdouble gain_fine;
   gdouble phase_fine;  
-
-  //GtkWidget *diversity_mixer_info;
-  //cairo_surface_t *diversity_mixer_surface;  
     
   RECEIVER *rx_visual;
   RECEIVER *rx_hidden;    
@@ -53,5 +49,6 @@ extern DIVMIXER *create_diversity_mixer(int id, RECEIVER *rxa, RECEIVER *rxb);
 extern void diversity_add_buffer(DIVMIXER *dmix);
 extern void diversity_mix_full_buffers(DIVMIXER *dmix);
 extern void set_gain_phase(DIVMIXER *dmix);
+extern void SetNumStreams(DIVMIXER *dmix);
 
 #endif

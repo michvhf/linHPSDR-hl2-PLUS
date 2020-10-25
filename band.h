@@ -121,6 +121,7 @@ extern BANDSTACK_ENTRY *bandstack_entry_get_current();
 
 extern void bandSaveState();
 extern void bandRestoreState();
+extern void change_filters(void);
 
 extern int next_band(int current_band);
 extern int previous_band(int current_band);

@@ -18,3 +18,4 @@
 */
 
 extern GtkWidget *create_oc_dialog(RADIO *radio);
+extern void update_oc_dialog(RADIO *r);

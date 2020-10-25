@@ -240,6 +240,8 @@ static void sample_rate_cb(GtkComboBox *widget,gpointer data) {
 static void filter_board_cb(GtkComboBox *widget,gpointer data) {
   RADIO *radio=(RADIO *)data;
   radio->filter_board=gtk_combo_box_get_active(widget);
+
+  change_filters();
   
   if(radio->discovered->protocol==PROTOCOL_2) {
     protocol2_high_priority();

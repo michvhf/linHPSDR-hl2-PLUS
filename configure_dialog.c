@@ -83,11 +83,14 @@ static gboolean switch_page_event(GtkNotebook *notebook,GtkWidget *page,guint pa
     //g_print("switch_page: %d %s rx=%d\n",page_num,text,rx);
     update_receiver_dialog(radio->receiver[rx]);
   }
-  if(strncmp("TX",text,2)==0) {
+  else if(strncmp("TX",text,2)==0) {
     update_transmitter_dialog(radio->transmitter);
   }
-  if(strncmp("DMIX",text,4)==0) {
+  else if(strncmp("DMIX",text,4)==0) {
     update_transmitter_dialog(radio->transmitter);
+  }  
+  else if(strncmp("OC",text,2)==0) {
+    update_oc_dialog(radio);
   }  
   
   return TRUE;

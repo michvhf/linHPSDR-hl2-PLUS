@@ -69,7 +69,7 @@ const long long ll_step[13]= {
 };
 
 gint64 steps[STEPS]={1,10,25,50,100,250,500,1000,5000,9000,10000,100000,250000,500000,1000000};
-char *step_labels[STEPS]={"1Hz","10Hz","25Hz","50Hz","100Hz","250Hz","500Hz","1kHz","5kHz","9kHz","10kHz","100kHz","250KHz","500KHz","1MHz"};
+char *step_labels[STEPS]={"1 Hz","10 Hz","25 Hz","50 Hz","100 Hz","250 Hz","500 Hz","1 kHz","5 kHz","9 kHz","10 kHz","100 kHz","250 kHz","500 kHz","1 MHz"};
    
 static gboolean pressed=FALSE;
 static gdouble last_x;

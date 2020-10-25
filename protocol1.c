@@ -529,7 +529,6 @@ g_print("process_control_bytes: ppt=%d dot=%d dash=%d\n",radio->ptt,radio->dot,r
       double alpha = 0.7;
       radio->transmitter->temperature = (alpha * this_temperature) + (1 - alpha) * radio->transmitter->temperature;
       
-      
       radio->transmitter->alex_forward_power=((control_in[3]&0xFF)<<8)|(control_in[4]&0xFF); // from Alex or Apollo
       break;
     case 2:
@@ -1713,7 +1712,12 @@ fprintf(stderr,"metis_restart\n");
   usleep(20000);
 
   // start the data flowing
-  metis_start_stop(3); // IQ data (wideband data disabled)
+  if(radio->wideband!=NULL) {
+    metis_start_stop(3); 
+  }
+  else {
+    metis_start_stop(1); // IQ data (wideband data disabled, set to 1)    
+  }
 }
 
 static void metis_start_stop(int command) {

@@ -494,6 +494,61 @@ void bandSaveState() {
     setProperty("band",value);
 }
 
+void change_filters(void) {
+  if(radio->filter_board == N2ADR) {  
+    BAND *band;
+    band = band_get_band(band160);
+    band->OCrx = band->OCtx = 1;
+    band = band_get_band(band80);
+    band->OCrx = band->OCtx = 66;
+    band = band_get_band(band60);
+    band->OCrx = band->OCtx = 68;
+    band = band_get_band(band40);
+    band->OCrx=band->OCtx = 68;
+    band = band_get_band(band30);
+    band->OCrx=band->OCtx = 72;
+    band = band_get_band(band20);
+    band->OCrx=band->OCtx = 72;
+    band = band_get_band(band17);
+    band->OCrx = band->OCtx = 80;
+    band = band_get_band(band15);
+    band->OCrx = band->OCtx = 80;
+    band = band_get_band(band12);
+    band->OCrx=band->OCtx = 96;
+    band = band_get_band(band10);
+    band->OCrx = band->OCtx = 96;  
+  }
+  else if (radio->filter_board == HL2_MRF101) {
+    BAND *band;
+    band = band_get_band(band160);
+    band->OCrx = band->OCtx = 0;
+    band = band_get_band(band80);
+    band->OCrx = band->OCtx = 80;
+    band = band_get_band(band60);
+    band->OCrx = band->OCtx = 72;
+    band = band_get_band(band40);
+    band->OCrx=band->OCtx = 68;
+    band = band_get_band(band30);
+    band->OCrx=band->OCtx = 68;
+    band = band_get_band(band20);
+    band->OCrx=band->OCtx = 66;
+    band = band_get_band(band17);
+    band->OCrx = band->OCtx = 66;
+    band = band_get_band(band15);
+    band->OCrx = band->OCtx = 65;
+    band = band_get_band(band12);
+    band->OCrx=band->OCtx = 65;
+    band = band_get_band(band10);
+    band->OCrx = band->OCtx = 65;       
+  }
+  else if (radio->filter_board == NONE) {
+    for(int i = 0; i < BANDS; i++) {
+      BAND *band = band_get_band(i);  
+      band->OCrx = band->OCtx = 0;
+    }
+  }
+}
+
 void bandRestoreState() {
     char* value;
     int b;
@@ -616,6 +671,7 @@ int previous_band(int current_band) {
   }
   return b;
 }
+
 void set_band(RECEIVER *rx,int band,int bs_entry) {
   // save current bandstack 
   BAND *b=&bands[rx->band_a];
