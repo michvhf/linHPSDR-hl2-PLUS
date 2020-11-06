@@ -224,6 +224,8 @@ typedef struct _radio {
 
   gboolean midi_enabled;
   char midi_filename[128];
+  
+  gboolean qos_flag;
 
 } RADIO;
 

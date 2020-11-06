@@ -19,7 +19,7 @@
 
 typedef struct _radio_info {
   GtkWidget *radio_info;
-  GtkWidget *buffer_overflow_underflow_b;
+  GtkWidget *qos_b;
   GtkWidget *adc_overload_b;
   GtkWidget *swr_b;
   GtkWidget *temp_b;

@@ -56,11 +56,11 @@ GtkWidget *create_radio_info_visual(RECEIVER *rx) {
 
   // ********** WARNINGS ****************************
   // HL2 Buffer over/underflow
-  if (radio->discovered->device == DEVICE_HERMES_LITE2) {
-    info->buffer_overflow_underflow_b=gtk_toggle_button_new_with_label("BUF");
-    gtk_widget_set_name(info->buffer_overflow_underflow_b,"info-warning");
-    gtk_layout_put(GTK_LAYOUT(info->radio_info),info->buffer_overflow_underflow_b,x,y);
-    x+=40;
+  if(radio->discovered->protocol==PROTOCOL_1) {    
+    info->qos_b = gtk_toggle_button_new_with_label("QOS");
+    gtk_widget_set_name(info->qos_b, "info-warning");
+    gtk_layout_put(GTK_LAYOUT(info->radio_info), info->qos_b, x, y);
+    x += 40;
   }
 
   // HERMES/HL2 ADC Clipping
@@ -94,7 +94,7 @@ GtkWidget *create_radio_info_visual(RECEIVER *rx) {
   x+=40;
 
 #ifdef CWDAEMON
-  info->cwdaemon_b=gtk_toggle_button_new_with_label("CWX");
+  info->cwdaemon_b=gtk_toggle_button_new_with_label("CWD");
   gtk_widget_set_name(info->cwdaemon_b,"info-button");
   gtk_layout_put(GTK_LAYOUT(info->radio_info),info->cwdaemon_b,x,y);
   x+=40;  
@@ -116,24 +116,24 @@ GtkWidget *create_radio_info_visual(RECEIVER *rx) {
 extern int midi_rx;
 
 void update_radio_info(RECEIVER *rx) {
-
-
   RADIO_INFO *info=(RADIO_INFO *)g_object_get_data((GObject *)rx->radio_info,"info_data");
 
   if(info==NULL) return;
 
-  //if (radio->discovered->device == DEVICE_HERMES_LITE2) {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(info->adc_overload_b),radio->adc_overload && (!isTransmitting(radio)));
-  //}
+  if(radio->discovered->protocol==PROTOCOL_1) {    
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(info->qos_b), radio->qos_flag);
+  }
+
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(info->adc_overload_b),radio->adc_overload && (!isTransmitting(radio)));
 
 
   if (radio->discovered->device == DEVICE_HERMES_LITE2) {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(info->temp_b),radio->transmitter->temperature>radio->temperature_alarm_value);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(info->temp_b),radio->transmitter->temperature > radio->temperature_alarm_value);
   }
 
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(info->swr_b),radio->transmitter->swr>radio->swr_alarm_value);
 
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(info->cat_b), rx->rigctl_enable);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(info->cat_b), rx->cat_client_connected);
 
 #ifdef MIDI
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(info->midi_b),radio->midi_enabled && (radio->receiver[midi_rx]->channel==rx->channel));
@@ -142,8 +142,4 @@ void update_radio_info(RECEIVER *rx) {
 #ifdef CWDAEMON
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(info->cwdaemon_b),radio->cwdaemon);
 #endif
-
-  if (radio->discovered->device == DEVICE_HERMES_LITE2) {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(info->temp_b),radio->transmitter->temperature>radio->temperature_alarm_value);
-  }
 }

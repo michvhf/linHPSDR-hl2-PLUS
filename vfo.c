@@ -204,6 +204,8 @@ static void aswapb_cb(GtkButton *widget,gpointer user_data) {
 
 static void EnableSplitSubRX(gpointer user_data) {
   RECEIVER *rx=(RECEIVER *)user_data;
+  vfo_a2b(rx);
+  
   // Split mode in CW, RX on VFO A, TX on VFO B.
   // When mode turned on, default to VFO A +1 kHz
   if (rx->mode_a == CWL || rx->mode_a == CWU) {

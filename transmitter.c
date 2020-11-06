@@ -654,7 +654,7 @@ void full_tx_buffer(TRANSMITTER *tx) {
     long qsample = 0;           
     g_mutex_lock((&tx->queue_mutex));
     QueueGet(&isample);
-    QueueGet(&qsample);    
+    QueueGet(&qsample);
     g_mutex_unlock((&tx->queue_mutex));
     protocol1_iq_samples(isample, qsample);
   }
