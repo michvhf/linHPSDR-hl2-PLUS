@@ -73,6 +73,13 @@ enum {
   REGION_UK
 };
 
+#ifdef CWDAEMON
+enum {
+  CWGEN_RADIO = 0,
+  CWGEN_PC
+};
+#endif
+
 typedef struct _radio {
   DISCOVERED *discovered;
   gboolean can_transmit;
@@ -105,7 +112,12 @@ typedef struct _radio {
   gboolean cw_breakin;
   gboolean cwdaemon;
   
+  gdouble protocol1_timer;
+  gdouble hang_time_ctr;
+  
   #ifdef CWDAEMON
+  gboolean cw_generation_mode;
+  
   gint cwdaemon_running;
   gint cwd_port;
   gboolean cwd_sidetone;
@@ -251,4 +263,7 @@ extern void radio_change_region(RADIO *r);
 extern void radio_change_audio(RADIO *r,int selected);
 extern void radio_change_audio_backend(RADIO *r,int selected);
 extern void update_radio(RADIO *radio);
+#ifdef CWDAEMON
+extern void radio_change_cwgeneration(RADIO *r);
+#endif
 #endif

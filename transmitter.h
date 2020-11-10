@@ -20,6 +20,8 @@
 #ifndef TRANSMITTER_H
 #define TRANSMITTER_H
 
+#include "ringbuffer.h"
+
 #define CTCSS_FREQUENCIES 38
 extern double ctcss_frequencies[CTCSS_FREQUENCIES];
 
@@ -27,7 +29,6 @@ typedef struct _transmitter {
   gint channel; // WDSP channel
 
   gint dac;
-  
   GMutex queue_mutex;  
 
   gint alex_antenna;
@@ -80,8 +81,16 @@ typedef struct _transmitter {
   gint mic_samples;
   gdouble *mic_input_buffer;
   gdouble *iq_output_buffer;
-  //
+  // Protocol 1 packet scheduling
   guint packet_counter;
+
+  
+  #ifdef CWDAEMON
+  // PC generated cw
+  glong cw_waveform_idx;
+  RINGBUFFER *cw_iq_delay_buf;  
+  gboolean last_key_state;
+  #endif
   
   gfloat *inI, *inQ, *outMI, *outMQ; // for EER
   gint mic_sample_rate;
@@ -168,6 +177,7 @@ extern void transmitter_set_ps(TRANSMITTER *tx,gboolean state);
 extern void transmitter_set_twotone(TRANSMITTER *tx,gboolean state);
 extern void transmitter_set_ps_sample_rate(TRANSMITTER *tx,int rate);
 
+extern int transmitter_get_mode(TRANSMITTER *tx);
 extern void QueueInit(void);
 extern void full_tx_buffer(TRANSMITTER *tx);
 

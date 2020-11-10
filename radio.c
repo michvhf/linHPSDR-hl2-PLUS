@@ -485,6 +485,24 @@ void radio_change_region(RADIO *r) {
   }
 }
 
+#ifdef CWDAEMON
+void radio_change_cwgeneration(RADIO *r) {
+  g_print("radio_change_cwgeneration gen mode %d keyer %d\n", r->cw_generation_mode, r->cw_keyer_internal);
+  if (r->cw_generation_mode == CWGEN_RADIO) {
+    // Hermes Lite 2 does not have an internal keyer, but does have
+    // cwx (key down command sent from PC), HL2 uses protocol 1
+    // cw_keyer_internal bit to turn on/off cw. Safest for the HL2 to never
+    // set this bit.
+    if (r->discovered->device != DEVICE_HERMES_LITE2) r->cw_keyer_internal = TRUE;
+  }
+  else {
+    // r->cw_generation_mode == CWGEN_PC
+    // PC generated CW, disable internal keyer in the radio
+    r->cw_keyer_internal = FALSE;
+  }
+}
+#endif
+
 void radio_change_audio(RADIO *r,int selected) {
   int i;
   g_print("%s: %dn",__FUNCTION__,selected);
@@ -829,8 +847,12 @@ void set_tune(RADIO *r,gboolean state) {
     switch(r->transmitter->rx->mode_a) {
       case CWL:
       case CWU:
-        SetTXAMode(r->transmitter->channel, r->transmitter->rx->mode_a);
-        r->cw_keyer_internal=TRUE;
+        SetTXAMode(r->transmitter->channel, r->transmitter->rx->mode_a); 
+        #ifdef CWDAEMON
+        if (r->cw_generation_mode == CWGEN_RADIO) r->cw_keyer_internal=TRUE;
+        #else
+        r->cw_keyer_internal=TRUE;        
+        #endif
         break;
     }
     rxtx(r);
@@ -882,7 +904,6 @@ g_print("add_receiver: no receivers available\n");
   }
   return i;
 }
-
 
 int add_diversity_mixer(void *data, RECEIVER *rx_visual, RECEIVER *rx_hidden) { 
   RADIO *r=(RADIO *)data;
@@ -1227,12 +1248,14 @@ g_print("create_radio for %s %d\n",d->name,d->device);
   r->cw_keyer_ptt_delay=20;
   r->cw_keyer_hang_time=300;
   r->cw_keys_reversed=FALSE;
-  r->cw_keys_reversed=FALSE;
   r->cw_breakin=FALSE;
   
+  r->protocol1_timer = 0;
+  r->hang_time_ctr = 0;
   r->cwdaemon=FALSE;
   
   #ifdef CWDAEMON
+  r->cw_generation_mode = CWGEN_RADIO;  
   r->cwdaemon_running=FALSE;
   r->cwd_port = 51000;
   r->cwd_sidetone = FALSE;
@@ -1335,6 +1358,10 @@ g_print("create_radio for %s %d\n",d->name,d->device);
   radio_restore_state(r);
 
   radio_change_region(r);
+
+  #ifdef CWDAEMON
+  radio_change_cwgeneration(r);
+  #endif
 
 #ifdef SOAPYSDR
   if(r->discovered->protocol==PROTOCOL_SOAPYSDR) {

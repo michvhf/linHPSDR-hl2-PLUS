@@ -59,9 +59,7 @@
 #include "error_handler.h"
 
 
-#ifdef CWDAEMON
-#include "cwdaemon.h"
-#endif
+
 
 #define min(x,y) (x<y?x:y)
 
@@ -111,6 +109,9 @@
 #define LT2208_DITHER_ON          0x08
 #define LT2208_RANDOM_OFF         0x00
 #define LT2208_RANDOM_ON          0x10
+#define CLOCK_PRECISION 1E9
+
+double last_time = 0;
 
 static int data_socket;
 static struct sockaddr_in data_addr;
@@ -122,6 +123,7 @@ static unsigned char control_in[5]={0x00,0x00,0x00,0x00,0x00};
 
 static gboolean running;
 static long ep4_sequence;
+static long ep6_sequence = 0;
 
 static int current_rx=0;
 
@@ -161,6 +163,8 @@ static gpointer receive_thread(gpointer arg);
 static void process_ozy_input_buffer(unsigned char  *buffer);
 static void process_wideband_buffer(unsigned char  *buffer);
 void ozy_send_buffer();
+
+static void protocol1_tx_scheduler_monitor(void);
 
 static unsigned char metis_buffer[1032];
 static long send_sequence=-1;
@@ -404,9 +408,15 @@ static gpointer receive_thread(gpointer arg) {
 
               switch(ep) {
                 case 6: // EP6
+                  ep6_sequence++;
+                  if(sequence!=ep6_sequence) {
+                    g_print("EP6 ERROR packet %ld pc %ld\n", sequence, ep6_sequence);
+                    ep6_sequence = sequence;                    
+                  }              
                   // process the data
                   process_ozy_input_buffer(&buffer[8]);
                   process_ozy_input_buffer(&buffer[520]);
+                  protocol1_tx_scheduler_monitor();                
                   full_tx_buffer(radio->transmitter);
                   break;
                 case 4: // EP4
@@ -452,17 +462,8 @@ static void process_control_bytes() {
   //gboolean previous_dot;
   //gboolean previous_dash;
 
-  gint tx_mode=USB;
-
-  RECEIVER *tx_receiver=radio->transmitter->rx;
-  if(tx_receiver!=NULL) {
-    if(radio->transmitter->rx->split) {
-      tx_mode=tx_receiver->mode_b;
-    } else {
-      tx_mode=tx_receiver->mode_a;
-    }
-  }
-
+  gint tx_mode = transmitter_get_mode(radio->transmitter); 
+  
   previous_ptt=radio->local_ptt;
   //previous_dot=radio->dot;
   //previous_dash=radio->dash;
@@ -471,16 +472,15 @@ static void process_control_bytes() {
   radio->dot=(control_in[0]&0x04)==0x04;
 
   radio->local_ptt=radio->ptt;
-  if(tx_mode==CWL || tx_mode==CWU) {
+  if ((tx_mode==CWL || tx_mode==CWU) && radio->cw_keyer_internal) {
     radio->local_ptt=radio->ptt|radio->dot|radio->dash;
   }
+
   if(previous_ptt!=radio->local_ptt) {
 g_print("process_control_bytes: ppt=%d dot=%d dash=%d\n",radio->ptt,radio->dot,radio->dash);
     g_idle_add(ext_ptt_changed,(gpointer)radio);
   }
 
-
-  
   switch((control_in[0]>>3)&0x1F) {
     case 0:
       radio->adc_overload=(control_in[1]&0x01)==0x01;
@@ -921,37 +921,8 @@ void protocol1_iq_samples(int isample,int qsample) {
     output_buffer[tx_output_buffer_index++]=0;
     output_buffer[tx_output_buffer_index++]=0;    
     
-    #ifdef CWDAEMON
-    gint tx_mode=USB;    
-    RECEIVER *tx_receiver=radio->transmitter->rx;
-    if(tx_receiver!=NULL) {
-      if(radio->transmitter->rx->split) {
-        tx_mode=tx_receiver->mode_b;
-      } else {
-        tx_mode=tx_receiver->mode_a;
-      }
-    }    
-    // I[0] of IQ stream is CWX keydown
-    if ((radio->cwdaemon) && (tx_mode==CWL || tx_mode==CWU)) {
-      g_mutex_lock(&cwdaemon_mutex);
-      if(keytx) { 
-        output_buffer[tx_output_buffer_index++]=0x00;
-        output_buffer[tx_output_buffer_index++]=0x01;
-      }
-      else {
-        output_buffer[tx_output_buffer_index++]=0x00;
-        output_buffer[tx_output_buffer_index++]=0x00; 
-      }
-      g_mutex_unlock(&cwdaemon_mutex); 
-    }
-    else {
-      output_buffer[tx_output_buffer_index++]=isample>>8;
-      output_buffer[tx_output_buffer_index++]=isample;
-    }    
-    #else 
     output_buffer[tx_output_buffer_index++]=isample>>8;
-    output_buffer[tx_output_buffer_index++]=isample;    
-    #endif    
+    output_buffer[tx_output_buffer_index++]=isample; 
 
     output_buffer[tx_output_buffer_index++]=qsample>>8;
     output_buffer[tx_output_buffer_index++]=qsample;
@@ -987,6 +958,30 @@ void protocol1_process_local_mic(RADIO *r) {
   for(i=0;i<r->local_microphone_buffer_size;i++) {
     add_mic_sample(r->transmitter,r->local_microphone_buffer[i]);
   }
+}
+
+double read_time_now(void) {
+  struct timespec thiscall;
+  clock_gettime(CLOCK_MONOTONIC, &thiscall);
+  // Calculate time it took
+  // TODO sort out sec and nsec units to accurately compare time (at the moment wrap around on nsec causes problems)
+  double this_time = (double)thiscall.tv_sec + (double)(thiscall.tv_nsec / CLOCK_PRECISION);
+  return this_time;
+}
+
+static void protocol1_tx_scheduler_monitor(void) {
+  // **************** PACKET TIMER  
+  // Calculate time taken by a request
+  //struct timespec thiscall;
+  //clock_gettime(CLOCK_MONOTONIC, &thiscall);
+  // Calculate time it took
+  // TODO sort out sec and nsec units to accurately compare time (at the moment wrap around on nsec causes problems)
+  //double this_time = (double)thiscall.tv_sec + (double)(thiscall.tv_nsec / CLOCK_PRECISION);
+  double this_time = read_time_now();
+  radio->protocol1_timer = 1E3 * (this_time - last_time);
+  last_time = this_time;
+  //if ((radio->protocol1_timer < 1) || (radio->protocol1_timer > 5)) g_print( "tdiff %lf\n", radio->protocol1_timer); 
+  // **************** PACKET TIMER    
 }
 
 static void process_wideband_buffer(unsigned char  *buffer) {
@@ -1107,8 +1102,6 @@ void ozy_send_buffer() {
       case 2:  // ANT 3
         break;
       case 3:  // EXT 1
-        //output_buffer[C3]|=0xA0;
-        printf("EXT1\n");
         //output_buffer[C3]|=0xC0;
         output_buffer[C3]|=0xE0;
         break;
@@ -1531,17 +1524,20 @@ void ozy_send_buffer() {
         }
 
         output_buffer[C1]=0x00;
+        
         if(tx_mode!=CWU && tx_mode!=CWL) {
-          // output_buffer[C1]|=0x00;
+          output_buffer[C1]|=0x00;
         } else {
           if(radio->tune || radio->vox || !radio->cw_keyer_internal) {
             output_buffer[C1]|=0x00;
           } else {
+            // Enabled internal keyer (radio generated cw) also enables
+            // cwx (no longer implemented in linHPSDR)
             output_buffer[C1]|=0x01;
           }
         }
-        output_buffer[C2]=radio->cw_keyer_sidetone_volume;
         
+        output_buffer[C2]=radio->cw_keyer_sidetone_volume;
         output_buffer[C3]=radio->cw_keyer_ptt_delay;
         output_buffer[C4]=0x00;
         break;
@@ -1601,7 +1597,7 @@ void ozy_send_buffer() {
     }
   }
 
-  if(tx_mode==CWU || tx_mode==CWL) {
+  if ((tx_mode==CWU || tx_mode==CWL) && radio->cw_keyer_internal) {
     if(radio->tune) {
       output_buffer[C0]|=0x01;
     }

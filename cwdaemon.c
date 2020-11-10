@@ -1094,14 +1094,13 @@ void cwdaemon_keyingevent(__attribute__((unused)) void *arg, int keystate)
 	} else {
     keytx = false;
 	}
-  g_mutex_unlock(&cwdaemon_mutex);   
+  g_mutex_unlock(&cwdaemon_mutex);
+  cwd_changed_at = read_time_now();
+     
 	inactivity_seconds = 0;
-
-	//printf("keying event \"%d\"\n", keystate);
 
 	return;
 }
-
 
 /**
    \brief Callback routine called when tone queue is empty
@@ -1206,9 +1205,6 @@ void cwdaemon_tone_queue_low_callback(__attribute__((unused)) void *arg)
 
 }
 
-
-
-
 bool cwdaemon_params_wpm(int *wpm, const char *optarg)
 {
 	long lv = 0;
@@ -1223,7 +1219,6 @@ bool cwdaemon_params_wpm(int *wpm, const char *optarg)
 		return true;
 	}
 }
-
 
 bool cwdaemon_params_tune(uint32_t *seconds, const char *optarg)
 {
@@ -1243,7 +1238,6 @@ bool cwdaemon_params_tune(uint32_t *seconds, const char *optarg)
 		return true;
 	}
 }
-
 
 /**
    \brief Handle parameter specifying PTT Turn On Delay
@@ -1326,7 +1320,6 @@ int cwdaemon_params_pttdelay(int *delay, const char *optarg)
 	}
 }
 
-
 bool cwdaemon_params_volume(int *volume, const char *optarg)
 {
 	long lv = 0;
@@ -1372,7 +1365,6 @@ bool cwdaemon_params_tone(int *tone, const char *optarg)
 		return true;
 	}
 }
-
 
 bool cwdaemon_params_set_verbosity(int *verbosity, const char *optarg)
 {

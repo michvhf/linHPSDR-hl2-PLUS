@@ -19,3 +19,6 @@
 
 extern void update_vox(RADIO *r);
 extern void vox_cancel(RADIO *r);
+
+extern void update_cwvox(RADIO *r);
+extern void set_cwvox(RADIO *r, gboolean cw_key_state);

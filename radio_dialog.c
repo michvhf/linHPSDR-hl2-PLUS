@@ -411,7 +411,6 @@ static void temperature_alarm_changed_cb(GtkWidget *widget, gpointer data) {
   radio->temperature_alarm_value=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
 }
 
-
 static void cw_keyer_speed_value_changed_cb(GtkWidget *widget, gpointer data) {
   RADIO *radio=(RADIO *)data;
   radio->cw_keyer_speed=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
@@ -423,6 +422,11 @@ static void cw_breakin_cb(GtkWidget *widget, gpointer data) {
 }
 
 #ifdef CWDAEMON
+static void cw_gen_cb(GtkWidget *widget, gpointer data) {
+  radio->cw_generation_mode = gtk_combo_box_get_active (GTK_COMBO_BOX(widget));
+  radio_change_cwgeneration(radio);  
+}
+
 static void cw_cwd_sidetone_cb(GtkWidget *widget, gpointer data) {
   RADIO *radio=(RADIO *)data;
   radio->cwd_sidetone=radio->cwd_sidetone==1?0:1;
@@ -542,37 +546,6 @@ static void enable_step_attenuation_cb(GtkWidget *widget,gpointer data) {
     protocol2_high_priority();
   }
 }
-
-/*
-static void rigctl_cb(GtkWidget *widget, gpointer data) {
-  int i;
-
-  rigctl_enable=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
-  if(rigctl_enable) {
-    for(i=0;i<radio->discovered->supported_receivers;i++) {
-      if(radio->receiver[i]!=NULL) {
-        launch_rigctl(radio->receiver[i]);
-      }
-    }
-    gtk_widget_set_sensitive(rigctl_base, FALSE); 
-  } else {
-    for(i=0;i<radio->discovered->supported_receivers;i++) {
-      if(radio->receiver[i]!=NULL) {
-        close_rigctl_ports(radio->receiver[i]);
-      }
-    }
-    gtk_widget_set_sensitive(rigctl_base, TRUE); 
-  }
-}
-
-static void rigctl_debug_cb(GtkWidget *widget, gpointer data) {
-  rigctl_debug=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
-}
-
-static void rigctl_value_changed_cb(GtkWidget *widget, gpointer data) {
-  rigctl_port_base=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
-}
-*/
 
 #ifdef CWDAEMON
 
@@ -1123,11 +1096,26 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cw_keyer_combo_box),NULL,"Mode B");
     gtk_combo_box_set_active(GTK_COMBO_BOX(cw_keyer_combo_box),radio->cw_keyer_mode);
     g_signal_connect(cw_keyer_combo_box,"changed",G_CALLBACK(cw_keyer_cb),radio);
-    gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_combo_box,x++,y,1,1);
+    gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_combo_box,x,y,1,1);
   }
 
   if (radio->discovered->device == DEVICE_HERMES_LITE2) {
-    #ifdef CWDAEMON    
+    #ifdef CWDAEMON
+    GtkWidget *cw_gen_label = gtk_label_new("CW generation:");
+    gtk_widget_show(cw_gen_label);
+    gtk_grid_attach(GTK_GRID(cw_grid), cw_gen_label, x++,y, 1, 1); 
+    
+    GtkWidget *cw_gen_combo = gtk_combo_box_text_new();
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cw_gen_combo), NULL, "Radio");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cw_gen_combo), NULL, "linHPSDR");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(cw_gen_combo), radio->cw_generation_mode);
+    g_signal_connect(cw_gen_combo, "changed", G_CALLBACK(cw_gen_cb), radio);
+    gtk_grid_attach(GTK_GRID(cw_grid), cw_gen_combo, x, y, 1, 1);    
+    
+    y++;
+    x = 0;
+    // New line
+    
     GtkWidget *cwdaemon_label=gtk_label_new("CWdaemon enabled:");
     gtk_widget_show(cwdaemon_label);
     gtk_grid_attach(GTK_GRID(cw_grid),cwdaemon_label,x++,y,1,1);
@@ -1146,8 +1134,6 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(cwport), radio->cwd_port);
     gtk_grid_attach(GTK_GRID(cw_grid),cwport,x,y,1,1);
     g_signal_connect(cwport,"value_changed",G_CALLBACK(cwport_value_changed_cb),NULL);
-   
-    
     #endif
   }
   else {
@@ -1269,36 +1255,6 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
   x=0;
   y=0;
 
-/*
-  GtkWidget *rigctl_frame=gtk_frame_new("CAT");
-  GtkWidget *rigctl_grid=gtk_grid_new();
-  gtk_grid_set_row_homogeneous(GTK_GRID(rigctl_grid),TRUE);
-  gtk_grid_set_column_homogeneous(GTK_GRID(rigctl_grid),FALSE);
-  gtk_container_add(GTK_CONTAINER(rigctl_frame),rigctl_grid);
-  gtk_grid_attach(GTK_GRID(grid),rigctl_frame,col,row++,1,1);
 
-  GtkWidget *rigctl_b=gtk_check_button_new_with_label("CAT Enabled");
-  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (rigctl_b), rigctl_enable);
-  gtk_grid_attach(GTK_GRID(rigctl_grid),rigctl_b,x++,y,1,1);
-  g_signal_connect(rigctl_b,"toggled",G_CALLBACK(rigctl_cb),radio);
-
-  GtkWidget *rigctl_debug_b=gtk_check_button_new_with_label("Debug");
-  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (rigctl_debug_b), rigctl_debug);
-  gtk_grid_attach(GTK_GRID(rigctl_grid),rigctl_debug_b,x,y++,1,1);
-  g_signal_connect(rigctl_debug_b,"toggled",G_CALLBACK(rigctl_debug_cb),radio);
-
-  GtkWidget *base_label=gtk_label_new("Base Port:");
-  gtk_widget_show(base_label);
-  gtk_grid_attach(GTK_GRID(rigctl_grid),base_label,x++,y,1,1);
-  
-  rigctl_base=gtk_spin_button_new_with_range(18000.0,21000.0,1.0);
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(rigctl_base),rigctl_port_base);
-  gtk_grid_attach(GTK_GRID(rigctl_grid),rigctl_base,x,y,1,1);
-  g_signal_connect(rigctl_base,"value_changed",G_CALLBACK(rigctl_value_changed_cb),NULL);
-
-  if(rigctl_enable) {
-    gtk_widget_set_sensitive(rigctl_base, FALSE); 
-  }
-*/
   return grid;
 }
