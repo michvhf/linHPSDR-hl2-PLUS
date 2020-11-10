@@ -237,15 +237,15 @@ void update_meter(RECEIVER *rx) {
   }
 
   sprintf(sf,"S%d", i);
-  cairo_move_to(cr, meter_width-267, meter_height-20);
+  cairo_move_to(cr, meter_width-250, meter_height-20);
   cairo_show_text(cr, sf);
 
   i=(int)smax;
   if(i>54) {
     i=i-54;
-    cairo_set_font_size(cr, 24);
+    cairo_set_font_size(cr, 20);
     sprintf(sf, "+%d", i);
-    cairo_move_to(cr, meter_width-225, (meter_height/2)+5);
+    cairo_move_to(cr, meter_width-210, (meter_height/2)+5);
     cairo_show_text(cr, sf);
   }
 

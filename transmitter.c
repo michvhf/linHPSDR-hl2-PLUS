@@ -54,12 +54,6 @@
 #include "cwdaemon.h"
 #endif
 
-// Ring buffer for sending 126 tx iq samples in a packet
-//#define QUEUE_ELEMENTS 10000
-//#define QUEUE_SIZE (QUEUE_ELEMENTS + 1)
-//long Queue[QUEUE_SIZE];
-//long QueueIn, QueueOut;
-
 double ctcss_frequencies[CTCSS_FREQUENCIES]= {
   67.0,71.9,74.4,77.0,79.7,82.5,85.4,88.5,91.5,94.8,
   97.4,100.0,103.5,107.2,110.9,114.8,118.8,123.0,127.3,131.8,
@@ -942,34 +936,6 @@ void transmitter_set_ps_sample_rate(TRANSMITTER *tx,int rate) {
   SetPSFeedbackRate (tx->channel,rate);
 }
 
-/*
-//Initialise the ring buffer
-void QueueInit(void) {
-    QueueIn = QueueOut = 0;
-}
-
-//Put sample on the ring buffer
-int QueuePut(long new) {
-  if(QueueIn == (( QueueOut - 1 + QUEUE_SIZE) % QUEUE_SIZE)) {
-    return -1; // Queue Full
-  }
-
-  Queue[QueueIn] = new;
-  QueueIn = (QueueIn + 1) % QUEUE_SIZE;
-  return 0; // No errors
-}
-
-//Get sample from the ring buffer
-int QueueGet(long *old) {
-  // Queue Empty - nothing to get
-  if(QueueIn == QueueOut) return -1; 
-
-  *old = Queue[QueueOut];
-  QueueOut = (QueueOut + 1) % QUEUE_SIZE;
-  return 0; // No errors
-}
-*/
-
 // Tx packet schedule synched to the rx packets
 // Credit to N5EG for most most of the code
 // https://github.com/Tom-McDermott/gr-hpsdr/blob/master/lib/HermesProxy.cc
@@ -1062,7 +1028,6 @@ int transmitter_get_mode(TRANSMITTER *tx) {
   }
   return tx_mode;
 }
-
 
 #ifdef CWDAEMON
 void transmitter_cw_sample_keystate(TRANSMITTER *tx) {
@@ -1281,9 +1246,6 @@ void full_tx_buffer_process(TRANSMITTER *tx) {
     return;
   }
   
-
-
-
   if(isTransmitting(radio)) {
     if(radio->classE) {
       for(j=0;j<tx->output_samples;j++) {
@@ -1640,7 +1602,7 @@ g_print("create_transmitter: channel=%d\n",channel);
 
   tx->updated=FALSE;
 
-  // 40 packets of 126 samples = 2520 = approx 106 ms delay
+  // 40 packets of 126 samples = 5040 = approx 106 ms delay
   // Has to be able to cope with large dumps from pulseaudio
   tx->p1_ringbuf = create_long_ringbuffer(5040);
   

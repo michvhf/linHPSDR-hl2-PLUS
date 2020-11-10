@@ -1423,21 +1423,17 @@ static void create_visual(RECEIVER *rx) {
   rx->table=gtk_table_new(4,6,FALSE);
 
   rx->vfo=create_vfo(rx);
-  gtk_widget_set_size_request(rx->vfo,715,75);
+  gtk_widget_set_size_request(rx->vfo,765,75);
   gtk_table_attach(GTK_TABLE(rx->table), rx->vfo, 0, 3, 0, 1,
       GTK_FILL, GTK_FILL, 0, 0);
-  
-  //GtkWidget *radio_info;
-  //cairo_surface_t *radio_info_surface;    
-  
-  
+    
   rx->radio_info=create_radio_info_visual(rx);
-  gtk_widget_set_size_request(rx->radio_info, 250, 60);        
+  gtk_widget_set_size_request(rx->radio_info, 170, 60);        
   gtk_table_attach(GTK_TABLE(rx->table), rx->radio_info, 3, 4, 0, 1,
       GTK_FILL, GTK_FILL, 0, 0);  
 
   rx->meter=create_meter_visual(rx);
-  gtk_widget_set_size_request(rx->meter,300,60);        // resize from 154 to 300 for custom s-meter
+  gtk_widget_set_size_request(rx->meter,250,60);        // resize from 154 to 300 for custom s-meter
   gtk_table_attach(GTK_TABLE(rx->table), rx->meter, 4, 6, 0, 1,
       GTK_FILL, GTK_FILL, 0, 0);
 
