@@ -55,10 +55,10 @@
 #endif
 
 // Ring buffer for sending 126 tx iq samples in a packet
-#define QUEUE_ELEMENTS 10000
-#define QUEUE_SIZE (QUEUE_ELEMENTS + 1)
-long Queue[QUEUE_SIZE];
-long QueueIn, QueueOut;
+//#define QUEUE_ELEMENTS 10000
+//#define QUEUE_SIZE (QUEUE_ELEMENTS + 1)
+//long Queue[QUEUE_SIZE];
+//long QueueIn, QueueOut;
 
 double ctcss_frequencies[CTCSS_FREQUENCIES]= {
   67.0,71.9,74.4,77.0,79.7,82.5,85.4,88.5,91.5,94.8,
@@ -942,6 +942,7 @@ void transmitter_set_ps_sample_rate(TRANSMITTER *tx,int rate) {
   SetPSFeedbackRate (tx->channel,rate);
 }
 
+/*
 //Initialise the ring buffer
 void QueueInit(void) {
     QueueIn = QueueOut = 0;
@@ -967,6 +968,7 @@ int QueueGet(long *old) {
   QueueOut = (QueueOut + 1) % QUEUE_SIZE;
   return 0; // No errors
 }
+*/
 
 // Tx packet schedule synched to the rx packets
 // Credit to N5EG for most most of the code
@@ -1189,8 +1191,8 @@ void full_tx_buffer(TRANSMITTER *tx) {
     
     
     g_mutex_lock((&tx->queue_mutex));
-    QueueGet(&isample);
-    QueueGet(&qsample);    
+    queue_get(tx->p1_ringbuf, &isample);
+    queue_get(tx->p1_ringbuf, &qsample);    
     g_mutex_unlock((&tx->queue_mutex));
     
     #ifdef CWDAEMON
@@ -1272,8 +1274,8 @@ void full_tx_buffer_process(TRANSMITTER *tx) {
       long isample = ROUNDHTZ(tx->iq_output_buffer[j*2]);
       long qsample = ROUNDHTZ(tx->iq_output_buffer[(j*2)+1]);  
       g_mutex_lock((&tx->queue_mutex));    
-      QueuePut(isample);
-      QueuePut(qsample);    
+      queue_put(tx->p1_ringbuf, isample);
+      queue_put(tx->p1_ringbuf, qsample);    
       g_mutex_unlock(&tx->queue_mutex);
     }
     return;
@@ -1519,7 +1521,6 @@ void transmitter_init_analyzer(TRANSMITTER *tx) {
 }
 
 TRANSMITTER *create_transmitter(int channel) {
-  QueueInit();
   gint rc;
 g_print("create_transmitter: channel=%d\n",channel);
   TRANSMITTER *tx=g_new0(TRANSMITTER,1);
@@ -1639,10 +1640,14 @@ g_print("create_transmitter: channel=%d\n",channel);
 
   tx->updated=FALSE;
 
+  // 40 packets of 126 samples = 2520 = approx 106 ms delay
+  // Has to be able to cope with large dumps from pulseaudio
+  tx->p1_ringbuf = create_long_ringbuffer(5040);
+  
   #ifdef CWDAEMON
   tx->cw_waveform_idx = 0;
   // Approx 13 ms delay between PTT and CW waveform
-  // This should be changed in future version to be adjustable 
+  // This should be changed in future version to be adjustable
   tx->cw_iq_delay_buf = create_long_ringbuffer(5);
   tx->last_key_state = FALSE;
   #endif

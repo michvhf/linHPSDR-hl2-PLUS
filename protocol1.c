@@ -220,7 +220,6 @@ void protocol1_set_mic_sample_rate(int rate) {
 }
 
 void protocol1_init(RADIO *r) {
-  QueueInit();
   fprintf(stderr,"protocol1_init\n");
 
   protocol1_set_mic_sample_rate(r->sample_rate);
