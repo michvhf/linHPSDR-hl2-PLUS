@@ -1066,10 +1066,12 @@ void ozy_send_buffer() {
               output_buffer[C2]|=radio->oc_tune<<1;
             }
           } else {
-            output_buffer[C2]|=radio->oc_tune<<1;
+ // SM4VEY
+        //    output_buffer[C2]|=radio->oc_tune<<1;
           }
         }
       } else {
+ //Rx
         output_buffer[C2]|=band->OCrx<<1;
       }
     }
@@ -1143,7 +1145,9 @@ void ozy_send_buffer() {
         default:
           break;
       }
-    } else {
+    //} else {
+    // SM4VEY Atlas Alex fix
+    }
       switch(radio->adc[0].antenna) {
         case 0:  // ANT 1
           output_buffer[C4]|=0x00;
@@ -1170,7 +1174,8 @@ void ozy_send_buffer() {
           }
           break;
       }
-    }
+    //}
+//SM4VEY Atlas fix
   } else {
     switch(command) {
       case 1: // tx frequency

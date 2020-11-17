@@ -123,6 +123,8 @@ static void radio_dialog_update_controls() {
       radio->filter_board=HL2_MRF101;
       break;
     case ATLAS:
+      radio->filter_board=ALEX;
+      break;
     case HERMES:
     case HERMES_2:
     case ANGELIA:
@@ -179,6 +181,13 @@ static void radio_dialog_update_controls() {
     case SOAPYSDR:
       break;
 #endif
+    case ATLAS:
+      gtk_widget_set_sensitive(adc0_antenna_combo_box, TRUE);
+      gtk_widget_set_sensitive(adc0_filters_combo_box, TRUE);
+      gtk_widget_set_sensitive(adc0_lpf_combo_box, TRUE);
+      gtk_widget_set_sensitive(adc0_hpf_combo_box, TRUE);
+      break;
+
     default:
       gtk_widget_set_sensitive(adc0_antenna_combo_box, FALSE);
       gtk_widget_set_sensitive(adc0_filters_combo_box, FALSE);
