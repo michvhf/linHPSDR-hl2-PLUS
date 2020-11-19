@@ -1095,6 +1095,7 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
   y=0;
 
   if (radio->discovered->device != DEVICE_HERMES_LITE2) {
+    
     GtkWidget *cw_keyer_mode_label=gtk_label_new("Keyer Mode:");
     gtk_widget_show(cw_keyer_mode_label);
     gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_mode_label,x++,y,1,1);
@@ -1105,7 +1106,18 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cw_keyer_combo_box),NULL,"Mode B");
     gtk_combo_box_set_active(GTK_COMBO_BOX(cw_keyer_combo_box),radio->cw_keyer_mode);
     g_signal_connect(cw_keyer_combo_box,"changed",G_CALLBACK(cw_keyer_cb),radio);
-    gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_combo_box,x,y,1,1);
+    gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_combo_box,x++,y,1,1);
+    
+    
+    GtkWidget *cw_keyer_reversed_label=gtk_label_new("Keys Reversed:");
+    gtk_widget_show(cw_keyer_reversed_label);
+    gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_reversed_label,x++,y,1,1);
+
+    GtkWidget *cw_keys_reversed_b=gtk_check_button_new();
+    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (cw_keys_reversed_b), radio->cw_keys_reversed);
+    gtk_widget_show(cw_keys_reversed_b);
+    gtk_grid_attach(GTK_GRID(cw_grid),cw_keys_reversed_b,x,y,1,1);
+    g_signal_connect(cw_keys_reversed_b,"toggled",G_CALLBACK(cw_keys_reversed_cb),radio);    
   }
 
   if (radio->discovered->device == DEVICE_HERMES_LITE2) {
@@ -1145,17 +1157,7 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
     g_signal_connect(cwport,"value_changed",G_CALLBACK(cwport_value_changed_cb),NULL);
     #endif
   }
-  else {
-    GtkWidget *cw_keyer_reversed_label=gtk_label_new("Keys Reversed:");
-    gtk_widget_show(cw_keyer_reversed_label);
-    gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_reversed_label,x++,y,1,1);
 
-    GtkWidget *cw_keys_reversed_b=gtk_check_button_new();
-    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (cw_keys_reversed_b), radio->cw_keys_reversed);
-    gtk_widget_show(cw_keys_reversed_b);
-    gtk_grid_attach(GTK_GRID(cw_grid),cw_keys_reversed_b,x++,y,1,1);
-    g_signal_connect(cw_keys_reversed_b,"toggled",G_CALLBACK(cw_keys_reversed_cb),radio);
-  }
   x=0;
   y++;
 
