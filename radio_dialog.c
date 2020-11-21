@@ -1094,7 +1094,7 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
   x=0;
   y=0;
 
-  if (radio->discovered->device != DEVICE_HERMES_LITE2) {
+  if ((radio->discovered->device != DEVICE_HERMES_LITE2) && (radio->discovered->device != DEVICE_METIS)) {
     
     GtkWidget *cw_keyer_mode_label=gtk_label_new("Keyer Mode:");
     gtk_widget_show(cw_keyer_mode_label);
@@ -1120,7 +1120,7 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
     g_signal_connect(cw_keys_reversed_b,"toggled",G_CALLBACK(cw_keys_reversed_cb),radio);    
   }
 
-  if (radio->discovered->device == DEVICE_HERMES_LITE2) {
+  if ((radio->discovered->device == DEVICE_HERMES_LITE2) || (radio->discovered->device == DEVICE_METIS)) {
     #ifdef CWDAEMON
     GtkWidget *cw_gen_label = gtk_label_new("CW generation:");
     gtk_widget_show(cw_gen_label);
@@ -1223,7 +1223,7 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
   }
   #ifdef CWDAEMON
   else {
-    if (radio->discovered->device == DEVICE_HERMES_LITE2) { 
+    if ((radio->discovered->device == DEVICE_HERMES_LITE2) || (radio->discovered->device == DEVICE_METIS)) { 
       GtkWidget *cw_cwd_sidetone_label = gtk_label_new("CWdaemon sidetone:");
       gtk_widget_show(cw_cwd_sidetone_label);
       gtk_grid_attach(GTK_GRID(cw_grid),cw_cwd_sidetone_label,x++,y,1,1);
