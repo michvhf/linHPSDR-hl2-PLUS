@@ -28,7 +28,7 @@ typedef struct _ringbuffer {
   guint queue_size;
 } RINGBUFFER;
 
-extern RINGBUFFER *create_long_ringbuffer(glong queue_elements);
+extern RINGBUFFER *create_long_ringbuffer(glong queue_elements, glong init_val);
 
 extern int queue_put(RINGBUFFER *rbuf, glong new_value);
 extern int queue_get(RINGBUFFER *rbuf, long *old);

@@ -532,7 +532,7 @@ int audio_open_input(RADIO *r) {
       attr.tlength = (uint32_t) -1;
       attr.prebuf = (uint32_t) -1;
       attr.minreq = (uint32_t) -1;
-      attr.fragsize = 512;    
+      attr.fragsize = 254;    
       
       
       sample_spec.rate=48000;

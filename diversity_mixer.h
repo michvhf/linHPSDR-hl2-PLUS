@@ -20,6 +20,8 @@
 #ifndef DIVMIXER_H
 #define DIVMIXER_H
 
+#include "receiver.h"
+
 typedef struct _divmixer {
   gint id; // WDSP mixer ID (limited to 2)
 

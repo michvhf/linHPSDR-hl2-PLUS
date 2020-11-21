@@ -1604,13 +1604,12 @@ g_print("create_transmitter: channel=%d\n",channel);
 
   // 40 packets of 126 samples = 5040 = approx 106 ms delay
   // Has to be able to cope with large dumps from pulseaudio
-  tx->p1_ringbuf = create_long_ringbuffer(5040);
-  
+  tx->p1_ringbuf = create_long_ringbuffer(7500, 0);
   #ifdef CWDAEMON
   tx->cw_waveform_idx = 0;
   // Approx 13 ms delay between PTT and CW waveform
   // This should be changed in future version to be adjustable
-  tx->cw_iq_delay_buf = create_long_ringbuffer(5);
+  tx->cw_iq_delay_buf = create_long_ringbuffer(5, -126);
   tx->last_key_state = FALSE;
   #endif
 

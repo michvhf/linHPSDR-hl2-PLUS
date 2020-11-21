@@ -693,16 +693,7 @@ static void process_ozy_input_buffer(char  *buffer) {
   double right_sample_double_tx;
   int nreceivers;
 
-  gint tx_mode=USB;
-
-  RECEIVER *tx_receiver=radio->transmitter->rx;
-  if(tx_receiver!=NULL) {
-    if(radio->transmitter->rx->split) {
-      tx_mode=tx_receiver->mode_b;
-    } else {
-      tx_mode=tx_receiver->mode_a;
-    }
-  }
+  gint tx_mode = transmitter_get_mode(radio->transmitter);   
 
   if(buffer[b++]==SYNC && buffer[b++]==SYNC && buffer[b++]==SYNC) {
     // extract control bytes
@@ -1273,17 +1264,7 @@ void ozy_send_buffer() {
         break;
       case 3:
         {
-        
-        gint tx_mode=USB;
-        tx_receiver=radio->transmitter->rx;
-        if(tx_receiver!=NULL) {
-          if(radio->transmitter->rx->split) {
-            tx_mode=tx_receiver->mode_b;
-          } else {
-            tx_mode=tx_receiver->mode_a;
-          }
-        }
-        
+        gint tx_mode = transmitter_get_mode(radio->transmitter);
         
         int level=0;
         // Always send TX drive level for CW mode
@@ -1511,24 +1492,15 @@ void ozy_send_buffer() {
 #endif
         output_buffer[C3]=0x00;
         output_buffer[C3]|=radio->transmitter->attenuation;
+        // Enabled HL2 hardware managed LNA gain during TX
         if(radio->discovered->device==DEVICE_HERMES_LITE2) output_buffer[C3]|=0x80;
         output_buffer[C4]=0x00;
         break;
       case 7:
         output_buffer[C0]=0x1E;
-
-        gint tx_mode=USB;
-        tx_receiver=radio->transmitter->rx;
-        if(tx_receiver!=NULL) {
-          if(radio->transmitter->rx->split) {
-            tx_mode=tx_receiver->mode_b;
-          } else {
-            tx_mode=tx_receiver->mode_a;
-          }
-        }
-
         output_buffer[C1]=0x00;
         
+        gint tx_mode = transmitter_get_mode(radio->transmitter);
         if(tx_mode!=CWU && tx_mode!=CWL) {
           output_buffer[C1]|=0x00;
         } else {
@@ -1591,16 +1563,8 @@ void ozy_send_buffer() {
   }
 
   // set mox
-  gint tx_mode=USB;
-  tx_receiver=radio->transmitter->rx;
-  if(tx_receiver!=NULL) {
-    if(radio->transmitter->rx->split) {
-      tx_mode=tx_receiver->mode_b;
-    } else {
-      tx_mode=tx_receiver->mode_a;
-    }
-  }
-
+  gint tx_mode = transmitter_get_mode(radio->transmitter);   
+  
   if ((tx_mode==CWU || tx_mode==CWL) && radio->cw_keyer_internal) {
     if(radio->tune) {
       output_buffer[C0]|=0x01;

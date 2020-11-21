@@ -40,19 +40,21 @@ int queue_get(RINGBUFFER *rbuf, long *old) {
   return 0; // No errors
 }
 
-RINGBUFFER *create_long_ringbuffer(glong queue_elements) {
+RINGBUFFER *create_long_ringbuffer(glong queue_elements, glong init_val) {
 g_print("create_long_ringbuffer: size %ld \n", queue_elements);
   RINGBUFFER *rbuf = g_new0(RINGBUFFER, 1);  
   
   //Initialise the ring buffer  
-  rbuf->queue_in = 0;
-  rbuf->queue_out = 0;
   rbuf->queue_size = queue_elements + 1;
   
   rbuf->queue = g_new0(glong, rbuf->queue_size);
 
   for (int i = 0; i < queue_elements; i++) {
-    queue_put(rbuf, -126);
+    queue_put(rbuf, init_val);
   }
+  
+  rbuf->queue_in = 0;
+  rbuf->queue_out = 0;  
+  
   return rbuf;
 }
