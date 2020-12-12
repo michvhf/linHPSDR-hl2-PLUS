@@ -119,8 +119,8 @@ static void radio_dialog_update_controls() {
       radio->filter_board=ALEX;
       break;
     case HERMES_LITE_2:
-      radio->filter_board=N2ADR;
-      radio->filter_board=HL2_MRF101;
+      //radio->filter_board=N2ADR;
+      //radio->filter_board=HL2_MRF101;
       break;
     case ATLAS:
       radio->filter_board=ALEX;
