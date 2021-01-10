@@ -62,6 +62,7 @@
 //#include "rigctl.h"
 #include "receiver_dialog.h"
 #include "subrx.h"
+#include "hl2.h"
 
 #ifdef MIDI
 // rather than including MIDI.h with all its internal stuff
@@ -74,6 +75,25 @@ static GtkWidget *add_receiver_b;
 static GtkWidget *add_wideband_b;
 
 static void rxtx(RADIO *r);
+
+int radio_restart(void *data) {
+  RADIO *r=(RADIO *)data;
+fprintf(stderr,"radio_restart\n");
+  switch(r->discovered->protocol) {
+    case PROTOCOL_1:
+      protocol1_run();
+      break;
+#ifdef SOAPYSDR
+    case PROTOCOL_SOAPYSDR:
+      soapy_protocol_change_sample_rate(r->receiver[0],r->sample_rate);
+      break;
+#endif
+  }
+  if(r->transmitter!=NULL) {
+    update_tx_panadapter(r);
+  }
+  return 0;
+}
 
 int radio_start(void *data) {
   RADIO *r=(RADIO *)data;
@@ -552,6 +572,7 @@ void vox_changed(RADIO *r) {
 }
 
 void frequency_changed(RECEIVER *rx) {
+    /*
     // Diversity mixer hidden rx synced to the rx which is
     // visualised    
     if (radio->divmixer[rx->dmix_id] != NULL) {
@@ -560,7 +581,7 @@ void frequency_changed(RECEIVER *rx) {
         radio->divmixer[rx->dmix_id]->rx_hidden->frequency_b = rx->frequency_b;  
       }
     }  
-  
+  */
   
   if(rx->ctun) {
     gint64 offset;
@@ -579,6 +600,7 @@ void frequency_changed(RECEIVER *rx) {
     SetRXAShiftFreq(rx->channel, (double)offset);
     RXANBPSetShiftFrequency(rx->channel, (double)offset);
     
+    /*
     // Diversity mixer hidden rx synced to the rx which is
     // visualised, this allow CTUN to work       
     if (radio->divmixer[rx->dmix_id] != NULL) {
@@ -589,7 +611,7 @@ void frequency_changed(RECEIVER *rx) {
         RXANBPSetShiftFrequency(channel, (double)offset);      
       }
     }
-    
+    */
 #ifdef SOAPYSDR
     if(radio->discovered->protocol==PROTOCOL_SOAPYSDR) {
       // delay setting tx frequency until transmit
@@ -646,9 +668,13 @@ void delete_wideband(WIDEBAND *w) {
 }
 
 void delete_receiver(RECEIVER *rx) {
+  
+  g_mutex_lock(&radio->delete_rx_mutex);  
+  
   // Receiver may have a diveristy mixer connected,
   // this removes the mixer and hidden rx for that mixer
   if (radio->divmixer[rx->dmix_id] != NULL) {
+    g_print("Not null, delete the hidden rx\n");
     delete_diversity_mixer(radio->divmixer[rx->dmix_id]);
   }
   
@@ -664,7 +690,10 @@ void delete_receiver(RECEIVER *rx) {
       radio->receiver[i]=NULL;
       radio->receivers--;
       if(radio->discovered->protocol==PROTOCOL_1) {
-        protocol1_run();
+        //protocol1_run();
+        //metis_restart();
+        protocol1_stop();
+
       }
 g_print("delete_receiver: receivers now %d\n",radio->receivers);
       break;
@@ -690,14 +719,17 @@ g_print("delete_receiver: receivers now %d\n",radio->receivers);
     gtk_widget_destroy(radio->dialog);
     radio->dialog=NULL;
   }
+  
+  g_idle_add(radio_restart,(void *)radio);
+  
+  g_mutex_unlock(&radio->delete_rx_mutex);  
 }
 
 void delete_diversity_mixer(DIVMIXER *dmix) {
-  int i;
   int hidden_channel;
 
-  for (i = 0; i < MAX_DIVERSITY_MIXERS; i++) {
-    if(radio->divmixer[i]==dmix) {
+  for (int i = 0; i < MAX_DIVERSITY_MIXERS; i++) {
+    if(radio->divmixer[i] == dmix) {
       g_print("delete div mixer %d\n", i);
       radio->divmixer[i]->rx_visual->dmix_id = MAX_DIVERSITY_MIXERS+1;     
       radio->divmixer[i]->rx_hidden->dmix_id = MAX_DIVERSITY_MIXERS+1; 
@@ -712,7 +744,10 @@ g_print("delete_diversity_mixer: dmixers now %d\n",radio->diversity_mixers);
     }
   }
   // Delete the hidden receiver
-  if (radio->receiver[hidden_channel] != NULL) delete_receiver(radio->receiver[hidden_channel]);
+  if (radio->receiver[hidden_channel] != NULL) {
+    g_print("delete_diversity_mixer: delete the hidden rx\n");
+    delete_receiver(radio->receiver[hidden_channel]);
+  }
 }
 
 static void rxtx(RADIO *r) {
@@ -1280,6 +1315,9 @@ g_print("create_radio for %s %d\n",d->name,d->device);
   g_mutex_init(&r->local_microphone_mutex);
 
   g_mutex_init(&r->ring_buffer_mutex);
+  
+  g_mutex_init(&r->delete_rx_mutex);
+  
   g_cond_init(&r->ring_buffer_cond);
 
   r->filter_board=ALEX;
@@ -1354,8 +1392,11 @@ g_print("create_radio for %s %d\n",d->name,d->device);
   
   r->dialog=NULL;
 
-
   radio_restore_state(r);
+
+  if (radio->discovered->device==DEVICE_HERMES_LITE2) {
+    r->hl2 = create_hl2();
+  }
 
   radio_change_region(r);
 

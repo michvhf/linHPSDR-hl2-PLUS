@@ -824,9 +824,9 @@ static gboolean update_timer_cb(void *data) {
           rev_power=tx->alex_forward_power;
         }
         if (radio->filter_board == HL2_MRF101) {
-          // N2ADR hl2 filter board
+          // HL2-MFR101 filter board
           constant1 = 3.3;
-          constant2 = 1.4;  
+          constant2 = 0.08;  
           fwd_cal_offset = 6;     
         }
         else {
@@ -859,7 +859,7 @@ static gboolean update_timer_cb(void *data) {
     if(fwd_power!=0) {
       v1=((double)rev_power/4095.0)*constant1;
       tx->rev=(v1*v1)/constant2;
-    }    
+    }  
   }
 
   return TRUE;
@@ -1108,12 +1108,19 @@ void transmitter_cw_sample_keystate(TRANSMITTER *tx) {
 
 // Protocol 1 receive thread calls this, to send 126 iq samples in a 
 // tx packet
-void full_tx_buffer(TRANSMITTER *tx) {
+void full_tx_buffer(TRANSMITTER *tx, gboolean force_send) {
   if (!isTransmitting(radio) && radio->discovered->device!=DEVICE_HERMES_LITE2) return;
   if ((isTransmitting(radio)) && (radio->classE)) return;
   
   // Work out if we are going to send a tx packet or return
-  if (!send_tx_packet_query(tx)) return;
+  
+  if (force_send) {
+    g_print("Force %d\n", radio->hl2->overflow);
+  }
+  else {
+    if (!send_tx_packet_query(tx)) return;
+  }
+  
   
   #ifdef CWDAEMON
   // PC generated cw waveform in the IQ packet sent the protocol 1 radio
@@ -1150,14 +1157,20 @@ void full_tx_buffer(TRANSMITTER *tx) {
   }
   #endif
   
+  int rv = 0;
+  int buf_underflow = 0;
+  
   for (int j = 0; j < tx->p1_packet_size; j++) {  
     long isample = 0;
     long qsample = 0;           
     
     
+  
     g_mutex_lock((&tx->queue_mutex));
-    queue_get(tx->p1_ringbuf, &isample);
-    queue_get(tx->p1_ringbuf, &qsample);    
+    rv = queue_get(tx->p1_ringbuf, &isample);
+    if (rv < 0) buf_underflow++;
+    rv = queue_get(tx->p1_ringbuf, &qsample);   
+    if (rv < 0) buf_underflow++;    
     g_mutex_unlock((&tx->queue_mutex));
     
     #ifdef CWDAEMON
@@ -1190,6 +1203,7 @@ void full_tx_buffer(TRANSMITTER *tx) {
     
     protocol1_iq_samples(isample, qsample);
   }
+  if (buf_underflow > 0) g_print("buff\n");
 }
 
 

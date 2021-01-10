@@ -91,7 +91,7 @@ void set_gain_phase(DIVMIXER *dmix) {
   SetEXTDIVRotate(dmix->id, dmix->num_streams, dmix->i_rotate, dmix->q_rotate);
 }
 
-// Just ADC1, Just ADC1, or diveristy mixer for ADC1+ADC2
+// Just ADC1, Just ADC2, or diveristy mixer for ADC1+ADC2
 void SetNumStreams(DIVMIXER *dmix) {
   SetEXTDIVOutput(dmix->id, dmix->num_streams);
 }
@@ -145,7 +145,8 @@ g_print("create_diversity_mixer: id=%d\n", id);
   // Initialise all the parameters
   SetEXTDIVBuffsize(dmix->id, dmix->iq_buffer_size);
   SetEXTDIVNr(dmix->id, dmix->num_streams);
-  SetEXTDIVOutput(dmix->id, dmix->num_streams);
+  //SetEXTDIVOutput(dmix->id, dmix->num_streams);
+  SetEXTDIVOutput(dmix->id, 0);  
   SetEXTDIVRotate(dmix->id, dmix->num_streams, dmix->i_rotate, dmix->q_rotate);
   // Now set the mixer to run
   SetEXTDIVRun(dmix->id, 1);

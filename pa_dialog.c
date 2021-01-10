@@ -41,7 +41,11 @@
 #include "protocol2.h"
 #include "audio.h"
 #include "band.h"
+#include "hl2.h"
 
+static GtkWidget *bias_label;
+static GtkWidget* hl2mrf_scale;
+static GtkWidget* hl2mrf_save;
 
 static void pa_value_changed_cb(GtkWidget *widget, gpointer data) {
   BAND *band=(BAND *)data;
@@ -52,15 +56,62 @@ static void pa_value_changed_cb(GtkWidget *widget, gpointer data) {
   }
 }
 
+static void hl2mrf_bias_save_cb(GtkWidget *widget,gpointer data) { 
+  HERMESLITE2 *hl2=(HERMESLITE2 *)data;  
+
+  g_print("Saving bias value %d\n", radio->hl2->mrf101_bias_value);
+  
+  // I2C address for the digital pot 
+  int addr = MCP4662_BIAS0;
+  addr |= ((addr << 4) & 0xff);
+  g_print("Using addr %x", addr);
+  HL2i2cQueueWrite(hl2, I2C_WRITE, ADDR_MCP4561, addr, hl2->mrf101_bias_value);
+}
+
+static void hl2mrf_bias_changed_cb(GtkWidget *widget, gpointer data) {
+  HERMESLITE2 *hl2=(HERMESLITE2 *)data;
+  hl2->mrf101_bias_value = (int)gtk_range_get_value(GTK_RANGE(widget));
+  g_print("Set bias %i\n", hl2->mrf101_bias_value);
+  // Write value without saving to EEPROM
+  int addr = MCP4662_BIAS0;
+  addr |= ((addr << 4) & 0xff);  
+  HL2i2cQueueWrite(hl2, I2C_WRITE, ADDR_MCP4561, 0, hl2->mrf101_bias_value);
+}
+
+static void enable_bias_cb(GtkWidget *widget, gpointer data) {
+  HERMESLITE2 *hl2=(HERMESLITE2 *)data;  
+
+  hl2->mrf101_bias_enable = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget));
+  if (hl2->mrf101_bias_enable == TRUE) {
+    g_print("Bias enabled\n");
+    gtk_widget_set_sensitive(hl2mrf_scale, TRUE);    
+    gtk_widget_set_sensitive(hl2mrf_save, TRUE);
+    g_print("Bias enabled_\n");
+  }
+  else {
+    gtk_widget_set_sensitive(hl2mrf_scale, FALSE);
+    gtk_widget_set_sensitive(hl2mrf_save, FALSE);
+  }
+}
+
 GtkWidget *create_pa_dialog(RADIO *r) {
   int i;
+  g_print("%s\n",__FUNCTION__);
+  GtkWidget *grid=gtk_grid_new();
+  gtk_grid_set_row_homogeneous(GTK_GRID(grid),FALSE);
+  gtk_grid_set_column_homogeneous(GTK_GRID(grid),FALSE);
+  gtk_grid_set_column_spacing(GTK_GRID(grid),5);
 
+  int row=0;
+  int col=0;
+  
   GtkWidget *pa_frame=gtk_frame_new("PA Calibration");
   GtkWidget *pa_grid=gtk_grid_new();
   gtk_grid_set_row_homogeneous(GTK_GRID(pa_grid),FALSE);
   gtk_grid_set_column_homogeneous(GTK_GRID(pa_grid),FALSE);
   gtk_grid_set_column_spacing(GTK_GRID(pa_grid),10);
   gtk_container_add(GTK_CONTAINER(pa_frame),pa_grid);
+  gtk_grid_attach(GTK_GRID(grid),pa_frame,col,row++,1,1);
 
   for(i=0;i<bandGen;i++) {
     BAND *band=band_get_band(i);
@@ -75,6 +126,75 @@ GtkWidget *create_pa_dialog(RADIO *r) {
     gtk_grid_attach(GTK_GRID(pa_grid),pa_r,((i%3)*2)+1,i/3,1,1);
     g_signal_connect(pa_r,"value_changed",G_CALLBACK(pa_value_changed_cb),band);
   }
+  
+  // Hermes-Lite 2 companion card 100 W PA hl2-mrf101
+  // bias is set by digital pot (MCP4561) on the hl2-mrf101 PCB
+  if ((radio->discovered->device==DEVICE_HERMES_LITE2) && (r->hl2 != NULL) && (radio->filter_board == HL2_MRF101)) {   
+    
+    // ****************** TEMP
+    // Read the stored bias  
+    int addr = MCP4662_BIAS0;
+    g_print("addr %d\n", addr);
+    addr = ((addr << 4) & 0xff) | 0x0c;
+    g_print("addr %d\n", addr);    
+    HL2i2cQueueWrite(r->hl2, I2C_READ, ADDR_MCP4561, addr, DUMMY_VALUE);
+    // ****************** TEMP    
 
-  return pa_frame;
+    
+    GtkWidget *hl2mrf_frame = gtk_frame_new("HL2-MRF101");
+    GtkWidget *hl2mrf_grid = gtk_grid_new();
+    gtk_grid_set_row_homogeneous(GTK_GRID(hl2mrf_grid), FALSE);
+    gtk_grid_set_column_homogeneous(GTK_GRID(hl2mrf_grid), FALSE);
+    gtk_grid_set_column_spacing(GTK_GRID(grid), 20);
+    gtk_container_add(GTK_CONTAINER(hl2mrf_frame), hl2mrf_grid);
+    gtk_grid_attach(GTK_GRID(grid), hl2mrf_frame, col, row++, 1, 1);
+
+    int x = 0;
+    int y = 0;
+
+    // Only allow bias to be set if user enables this tick box, this acts as
+    // a caution to make sure user thinks about what they are doing
+    GtkWidget *enable_bias_b = gtk_check_button_new();
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(enable_bias_b), r->hl2->mrf101_bias_enable);
+    gtk_widget_show(enable_bias_b);
+    gtk_grid_attach(GTK_GRID(hl2mrf_grid), enable_bias_b, x, y, 1, 1);
+    g_signal_connect(enable_bias_b,"toggled",G_CALLBACK(enable_bias_cb), r->hl2); 
+    
+    x++;
+    
+    GtkWidget *enable_bias_label = gtk_label_new("Enable bias adjustment");
+    gtk_misc_set_alignment(GTK_MISC(enable_bias_label), 0, 0);    
+    gtk_widget_show(enable_bias_label);
+    gtk_grid_attach(GTK_GRID(hl2mrf_grid), enable_bias_label, x, y++, 1, 1);
+    x = 0;
+    
+    // Bias slider
+    bias_label = gtk_label_new("Bias:");
+    gtk_misc_set_alignment(GTK_MISC(bias_label), 0, 0);
+    gtk_widget_show(bias_label);
+    gtk_grid_attach(GTK_GRID(hl2mrf_grid), bias_label, x, y, 1, 1);
+
+    x++;    
+
+    hl2mrf_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL,0, 255, 1);
+    gtk_widget_set_size_request (hl2mrf_scale, 300, 25);
+    gtk_range_set_value(GTK_RANGE(hl2mrf_scale), r->hl2->mrf101_bias_value);
+    gtk_widget_show(hl2mrf_scale);
+    gtk_grid_attach(GTK_GRID(hl2mrf_grid), hl2mrf_scale, x, y, 1, 1);
+    g_signal_connect(G_OBJECT(hl2mrf_scale), "value_changed", G_CALLBACK(hl2mrf_bias_changed_cb), r->hl2);
+
+    // The values have so far been set in volative space in the MCP4561, this saves value to EEPROM
+    x++;
+    
+    hl2mrf_save = gtk_button_new_with_label("Save bias");
+    gtk_grid_attach(GTK_GRID(hl2mrf_grid), hl2mrf_save, x, y, 1, 1);
+    g_signal_connect(hl2mrf_save, "clicked", G_CALLBACK(hl2mrf_bias_save_cb), r->hl2);  
+    
+    if (r->hl2->mrf101_bias_enable == FALSE) {    
+      gtk_widget_set_sensitive(hl2mrf_scale, FALSE);    
+      gtk_widget_set_sensitive(hl2mrf_save, FALSE);       
+    }
+  }
+
+  return grid;
 }

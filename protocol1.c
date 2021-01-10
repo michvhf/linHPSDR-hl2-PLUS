@@ -57,6 +57,7 @@
 //#include "vox.h"
 #include "ext.h"
 #include "error_handler.h"
+#include "hl2.h"
 
 
 
@@ -411,12 +412,19 @@ static gpointer receive_thread(gpointer arg) {
                   if(sequence!=ep6_sequence) {
                     g_print("EP6 ERROR packet %ld pc %ld\n", sequence, ep6_sequence);
                     ep6_sequence = sequence;                    
+                    if (radio->hl2 != NULL) radio->hl2->ep6_error_ctr++;
                   }              
                   // process the data
                   process_ozy_input_buffer(&buffer[8]);
                   process_ozy_input_buffer(&buffer[520]);
-                  protocol1_tx_scheduler_monitor();                
-                  full_tx_buffer(radio->transmitter);
+                  protocol1_tx_scheduler_monitor();   
+                  //if (!radio->hl2->overflow) {
+                    full_tx_buffer(radio->transmitter, FALSE);
+                  //}
+                  //else {
+                  //  g_print("O EP6 %ld\n", sequence);                    
+                  //}
+                  
                   break;
                 case 4: // EP4
                   ep4_sequence++;
@@ -480,6 +488,17 @@ g_print("process_control_bytes: ppt=%d dot=%d dash=%d\n",radio->ptt,radio->dot,r
     g_idle_add(ext_ptt_changed,(gpointer)radio);
   }
 
+  if (radio->hl2 != NULL) {
+    gboolean ack = (control_in[0]&0xFF) >> 7;      
+    if (ack) {
+      // ACK from HL2  
+      HL2i2cProcessReturnValue(radio->hl2, control_in[0], control_in[1],
+                               control_in[2], control_in[3],
+                               control_in[4]);  
+      return;
+    }
+  } 
+    
   switch((control_in[0]>>3)&0x1F) {
     case 0:
       radio->adc_overload=(control_in[1]&0x01)==0x01;
@@ -489,17 +508,85 @@ g_print("process_control_bytes: ppt=%d dot=%d dash=%d\n",radio->ptt,radio->dot,r
       
       
       //HL2 Buffer over/underflow
-      #ifdef CWDAEMON
-      //if ((radio->ptt) || keytx) {
-          int recov = (control_in[3]&0x40) == 0x40;
-          //int msb = (control_in[3]&0x80) == 0x80;
-          int msb = control_in[3];          
-          //if (msb == 1) {
-            //g_print("Buffer recovery %d %d\n", recov, msb);
-          //}   
-      //}    
-      #endif
-      //}
+      if (radio->hl2 != NULL) {
+        //g_print("%d\n", isTransmitting(radio));
+        
+        //if (!isTransmitting(radio)) {
+          radio->hl2->overflow = FALSE;        
+          radio->hl2->underflow = FALSE;         
+        //}
+        if (isTransmitting(radio)) {
+          int recovery = control_in[3];
+          
+          if (control_in[3] == 128) g_print("CLICK\n");
+          
+          recovery = ((control_in[3] & 0xC0) >> 6);
+          //g_print("recovery %d\n", recovery);
+          
+          /*
+          if ((control_in[3]&0x80) == 0x80) {
+            g_print("Under\n");
+            g_print("bval %d\n", (int)control_in[3]);            
+          }
+          if (((control_in[3]&0x80) == 0x80) && ((control_in[3]&0x40) == 0x40)) {
+            g_print("Over\n");            
+            g_print("bval %d\n", (int)control_in[3]);            
+          }          
+          */
+          
+          
+          if (recovery == 3) radio->hl2->overflow = TRUE;
+          if (recovery == 2) radio->hl2->underflow = TRUE;
+
+          int msb = control_in[3]; 
+          double fill_level = (double)msb * 16 * 1.0/48   ;     
+
+          
+          if (fill_level < 5) {         
+            /*
+            g_print("EP6 %ld\n", ep6_sequence);   
+            g_print("Fill LOW %lf %d%d\n", fill_level, radio->hl2->underflow, radio->hl2->overflow );
+            
+            g_print("Resize buffer %d\n", radio->hl2->hl2_tx_buffer_size);
+            */
+            /*
+            if (radio->hl2->hl2_tx_buffer_size < 42) {
+              radio->hl2->hl2_tx_buffer_size++;
+            }
+            */
+            //full_tx_buffer(radio->transmitter, TRUE);
+            //full_tx_buffer(radio->transmitter, TRUE);
+            full_tx_buffer(radio->transmitter, TRUE);                        
+          }   
+          
+          /*
+          if (fill_level > 42) {            
+           g_print("Fill HIGH %lf %d%d\n", fill_level, radio->hl2->underflow, radio->hl2->overflow );
+          }
+          */           
+          
+          
+          // Did the PTT change because of a buffer underflow?
+          
+          //if (overflow || underflow) g_print("TX IQ FIFO flag %d%d\n", underflow, overflow );
+          
+          /*
+          if (radio->hl2->underflow) {
+            g_print("--U %lf %ld\n", fill_level, ep6_sequence);
+            g_print("bval %d\n", (int)control_in[3]);
+                      g_print("recovery %d\n", recovery);
+          }
+          
+          if (radio->hl2->overflow) {
+            g_print("--O %lf\n", fill_level);   
+                               g_print("bval %d\n", (int)control_in[3]);
+                      g_print("recovery %d\n", recovery);
+          }
+          */ 
+          //if (previous_ptt != radio->ptt) g_print("TX IQ FIFO flag %d%d\n", underflow, overflow );
+          
+        }    
+      }
       
       if(radio->mercury_software_version!=control_in[2]) {
         radio->mercury_software_version=control_in[2];
@@ -625,7 +712,9 @@ static void process_ozy_byte(int b) {
         }
       }
       if(radio->receiver[j]!=NULL) {
+        g_mutex_lock(&radio->delete_rx_mutex); 
         add_iq_samples(radio->receiver[j], left_sample_double,right_sample_double);
+        g_mutex_unlock(&radio->delete_rx_mutex); 
       }
       nreceiver++;
       if(nreceiver==radio->receivers) {
@@ -960,18 +1049,18 @@ double read_time_now(void) {
 }
 
 static void protocol1_tx_scheduler_monitor(void) {
-  // **************** PACKET TIMER  
-  // Calculate time taken by a request
-  //struct timespec thiscall;
-  //clock_gettime(CLOCK_MONOTONIC, &thiscall);
-  // Calculate time it took
+  // Calculate time gap between packets received from p1 radio
   // TODO sort out sec and nsec units to accurately compare time (at the moment wrap around on nsec causes problems)
-  //double this_time = (double)thiscall.tv_sec + (double)(thiscall.tv_nsec / CLOCK_PRECISION);
   double this_time = read_time_now();
   radio->protocol1_timer = 1E3 * (this_time - last_time);
   last_time = this_time;
-  //if ((radio->protocol1_timer < 1) || (radio->protocol1_timer > 5)) g_print( "tdiff %lf\n", radio->protocol1_timer); 
-  // **************** PACKET TIMER    
+  
+  if (radio->hl2 != NULL) {
+    if (radio->protocol1_timer > 20) {
+      //g_print( "tdiff %lf\n", radio->protocol1_timer); 
+      radio->hl2->late_packets++;
+    }
+  }   
 }
 
 static void process_wideband_buffer(unsigned char  *buffer) {
@@ -997,6 +1086,11 @@ void ozy_send_buffer() {
   output_buffer[SYNC0]=SYNC;
   output_buffer[SYNC1]=SYNC;
   output_buffer[SYNC2]=SYNC;
+  // Multiple synchronised HL2s. Only send command to the primary HL2 (unless we 
+  // specificy a specific HL2 later)
+  if ((radio->hl2 != NULL) && (radio->diversity_mixers > 0)) {
+    output_buffer[SYNC2] = HL2_SYNC_MASK_PRIMARY;
+  }
   output_buffer[C0]=0x00;
   output_buffer[C1]=0x00;
   output_buffer[C2]=0x00;
@@ -1029,11 +1123,9 @@ void ozy_send_buffer() {
     if (radio->discovered->device == DEVICE_METIS)
 #endif
     {
-      if (radio->atlas_mic_source)
-        output_buffer[C1] |= PENELOPE_MIC;
+      if (radio->atlas_mic_source) output_buffer[C1] |= PENELOPE_MIC;
       output_buffer[C1] |= CONFIG_BOTH;
-      if (radio->atlas_clock_source_128mhz)
-        output_buffer[C1] |= MERCURY_122_88MHZ_SOURCE;
+      if (radio->atlas_clock_source_128mhz) output_buffer[C1] |= MERCURY_122_88MHZ_SOURCE;
       output_buffer[C1] |= ((radio->atlas_clock_source_10mhz & 3) << 2);
     }
 
@@ -1422,6 +1514,7 @@ void ozy_send_buffer() {
   
         output_buffer[C4]=0x00;
         if(radio->discovered->device==DEVICE_HERMES_LITE2) {
+          // HL2 full AD9866 gain range -12 dB (0) to 48 dB (60)
           output_buffer[C4]=0x40;
           // HL2 extends into [5:0] of this buffer          
           output_buffer[C4]|=(((int)radio->adc[0].attenuation + 12)&0x3F);
@@ -1545,19 +1638,51 @@ void ozy_send_buffer() {
         output_buffer[C4]=0x00;
         break;
       case 11:
-        // TX buffer size
-        output_buffer[C0]=0x2E;        
-        output_buffer[C1]=0x0;        
-        output_buffer[C2]=0x0;        
-        output_buffer[C3]=0x4;        
-        output_buffer[C4]=0x15;
-        break;
+        //g_mutex_lock(&hl2i2c_mutex);
+        if (radio->hl2 != NULL) {
+          //g_mutex_lock(&hl2->i2c_mutex);
+          // Is there anything in the PC to HL2 command ring buffer?
+          if (HL2i2cWriteQueued(radio->hl2)) { 
+            //g_print("-----I2C send to HL2\n");
+            output_buffer[C0] = HL2i2cSendRqst(radio->hl2);                         
+            //g_print("%x\n", output_buffer[C0]);
+            output_buffer[C1] = HL2i2cReadWrite(radio->hl2);      
+            //g_print("%x\n", output_buffer[C1]);  
+            output_buffer[C2] = HL2i2cSendTargetAddr(radio->hl2);    
+            //g_print("%x\n", output_buffer[C2]);                
+            output_buffer[C3] = HL2i2cSendCommand(radio->hl2);        
+            //g_print("%x\n", output_buffer[C3]);            
+            output_buffer[C4] = HL2i2cSendValue(radio->hl2);
+            //g_print("%x\n", output_buffer[C4]);     
+            //g_print("-----I2C send done\n");                 
+          }
+          //else if (adc2_check_send(radio->hl2)) {
+          //}
+          else {
+            // TX buffer size
+            output_buffer[C0]=0x2E;
+            //output_buffer[C0]=(0x17>>1) & 0xFF;
+            output_buffer[C1]=0x0;
+            output_buffer[C2]=0x0;
+            // PTT delay
+            output_buffer[C3]=0x6;
+            // TX buffer latency
+            output_buffer[C4] = hl2_get_txbuffersize(radio->hl2);            
+          } 
+        }
+        //g_mutex_unlock(&hl2->i2c_mutex);
+        break;        
     }
 
     if(current_rx==0) {
       command++;
-      if(command>11) {
-        command=1;
+      if (radio->discovered->device==DEVICE_HERMES_LITE2) {
+        if (command>11) {
+          command=1;
+        }
+      }
+      else {
+        if (command>10) command=1;
       }
     }
   }

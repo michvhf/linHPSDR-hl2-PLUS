@@ -30,6 +30,7 @@
 #define BPSK_CHANNEL 10
 
 #include "diversity_mixer.h"
+#include "hl2.h"
 #include "band.h"
 
 enum {
@@ -90,6 +91,7 @@ typedef struct _radio {
   gint diversity_mixers;
   RECEIVER *receiver[MAX_RECEIVERS];
   TRANSMITTER *transmitter;
+  HERMESLITE2 *hl2;
   RECEIVER *active_receiver;
   DIVMIXER *divmixer[MAX_DIVERSITY_MIXERS+1];
   gint alex_rx_antenna;
@@ -140,6 +142,8 @@ typedef struct _radio {
   gboolean input_started;
   GMutex ring_buffer_mutex;
   GCond ring_buffer_cond;
+  
+  GMutex delete_rx_mutex;  
   
 #ifndef __APPLE__
   pa_simple* microphone_stream;
@@ -241,6 +245,7 @@ typedef struct _radio {
 
 } RADIO;
 
+extern int radio_restart(void *data);
 extern int radio_start(void *data);
 extern gboolean isTransmitting(RADIO *r);
 extern RADIO *create_radio(DISCOVERED *d);

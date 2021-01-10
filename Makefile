@@ -139,6 +139,7 @@ diversity_dialog.c\
 rigctl.c \
 bpsk.c \
 ringbuffer.c \
+hl2.c \
 subrx.c
 
 HEADERS=\
@@ -194,6 +195,7 @@ diversity_dialog.h\
 rigctl.h \
 bpsk.h \
 ringbuffer.h \
+hl2.h \
 subrx.h
 
 OBJS=\
@@ -248,6 +250,7 @@ diversity_dialog.o\
 rigctl.o \
 bpsk.o \
 ringbuffer.o \
+hl2.o \
 subrx.o
 
 
