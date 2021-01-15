@@ -1020,11 +1020,15 @@ int transmitter_get_mode(TRANSMITTER *tx) {
   gint tx_mode = USB;    
   RECEIVER *tx_receiver = tx->rx;
   if(tx_receiver!=NULL) {
+#ifdef USE_VFO_B_MODE_AND_FILTER    
     if(tx_receiver->split) {
       tx_mode = tx_receiver->mode_b;
     } else {
+#endif      
       tx_mode = tx_receiver->mode_a;
+#ifdef USE_VFO_B_MODE_AND_FILTER      
     }
+#endif    
   }
   return tx_mode;
 }
@@ -1203,7 +1207,7 @@ void full_tx_buffer(TRANSMITTER *tx, gboolean force_send) {
     
     protocol1_iq_samples(isample, qsample);
   }
-  if (buf_underflow > 0) g_print("buff\n");
+  //if (buf_underflow > 0) g_print("buff\n");
 }
 
 

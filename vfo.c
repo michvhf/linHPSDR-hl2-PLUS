@@ -178,7 +178,7 @@ void vfo_aswapb(RECEIVER *rx) {
 
   frequency_changed(rx);
   receiver_mode_changed(rx,rx->mode_a);
-  if(radio->transmitter->rx==rx) {
+  if(radio->transmitter!=NULL && radio->transmitter->rx==rx) {
     if(rx->split!=SPLIT_OFF) {
       transmitter_set_mode(radio->transmitter,rx->mode_b);
     } else {
@@ -268,7 +268,7 @@ void split_cb(GtkWidget *menu_item,gpointer data) {
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(choice->button),rx->split!=SPLIT_OFF);
   g_signal_handlers_unblock_by_func(choice->button,G_CALLBACK(split_b_cb),rx);
 
-  if(radio->transmitter->rx==rx) {
+  if(radio->transmitter && radio->transmitter->rx==rx) {
     switch(rx->split) {
       case SPLIT_OFF:
         transmitter_set_mode(radio->transmitter,rx->mode_a);
@@ -524,7 +524,7 @@ void mode_cb(GtkWidget *menu_item,gpointer data) {
   if(choice->rx->split!=SPLIT_OFF) {
     choice->rx->mode_b=choice->selection;
   }
-  if(radio->transmitter->rx==choice->rx) {
+  if(radio->transmitter!=NULL && radio->transmitter->rx==choice->rx) {
     if(choice->rx->split!=SPLIT_OFF) {
       transmitter_set_mode(radio->transmitter,choice->rx->mode_b);
     } else {

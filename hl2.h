@@ -45,6 +45,10 @@
 //#define MCP_WRITE_EEPROM
 
 #define HL2_SYNC_MASK_PRIMARY 0x7D
+#define HL2_SYNC_MASK_SECONDARY 0x7E
+
+
+
 
 typedef struct _hermeslite2 {
   gint mrf101_bias_value;

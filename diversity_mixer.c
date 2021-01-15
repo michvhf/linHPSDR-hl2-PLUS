@@ -75,13 +75,16 @@ void diversity_mix_full_buffers(DIVMIXER *dmix) {
 
 void set_gain_phase(DIVMIXER *dmix) {
   double amplitude = pow(10.0, 0.05 * (dmix->gain + dmix->gain_fine));
-  double arg = (dmix->phase+dmix->phase_fine) * (M_PI / 180);
+  double arg = (dmix->phase + dmix->phase_fine) * (M_PI / 180);
   
   dmix->i_rotate[1] = amplitude*cos(arg);
   dmix->q_rotate[1] = amplitude*sin(arg);
 
-  dmix->i_rotate[0] = 1.0;
-  dmix->q_rotate[0] = 0;
+  //dmix->i_rotate[0] = 1.0;
+  //dmix->q_rotate[0] = 0;
+
+  dmix->i_rotate[0] = 0;
+  dmix->q_rotate[0] = 1.0;
 
 //fprintf(stderr,"GAIN=%f PHASE=%f\n", dmix->gain, dmix->phase);
 
@@ -95,6 +98,16 @@ void set_gain_phase(DIVMIXER *dmix) {
 void SetNumStreams(DIVMIXER *dmix) {
   SetEXTDIVOutput(dmix->id, dmix->num_streams);
 }
+
+void diversity_mix_calibrate_gain_visuals(DIVMIXER *dmix) {
+  dmix->rx_hidden->panadapter_width = dmix->rx_visual->panadapter_width;
+  dmix->rx_hidden->panadapter_height = dmix->rx_visual->panadapter_height;   
+  dmix->rx_hidden->pixels = dmix->rx_visual->pixels;
+  dmix->rx_hidden->fps = dmix->rx_visual->fps;
+  dmix->rx_hidden->display_average_time = dmix->rx_visual->display_average_time;
+  receiver_init_analyzer(dmix->rx_hidden);    
+}
+
 
 DIVMIXER *create_diversity_mixer(int id, RECEIVER *rxa, RECEIVER *rxb) {
   DIVMIXER *dmix=g_new0(DIVMIXER,1);
@@ -124,6 +137,10 @@ g_print("create_diversity_mixer: id=%d\n", id);
   dmix->gain_fine = 0;
   dmix->phase_fine = 0;
   
+  dmix->flip = FALSE;
+  
+  dmix->calibrate_gain = FALSE;
+  
   dmix->iq_output_buffer = g_new0(gdouble, 2*dmix->iq_buffer_size);
   
   dmix->iq_input = (gdouble **) g_malloc0(dmix->num_streams * sizeof(gdouble *));
@@ -145,8 +162,7 @@ g_print("create_diversity_mixer: id=%d\n", id);
   // Initialise all the parameters
   SetEXTDIVBuffsize(dmix->id, dmix->iq_buffer_size);
   SetEXTDIVNr(dmix->id, dmix->num_streams);
-  //SetEXTDIVOutput(dmix->id, dmix->num_streams);
-  SetEXTDIVOutput(dmix->id, 0);  
+  SetEXTDIVOutput(dmix->id, dmix->num_streams); 
   SetEXTDIVRotate(dmix->id, dmix->num_streams, dmix->i_rotate, dmix->q_rotate);
   // Now set the mixer to run
   SetEXTDIVRun(dmix->id, 1);

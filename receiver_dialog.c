@@ -554,13 +554,13 @@ static gboolean deviation_select_cb(GtkWidget *widget,gpointer data) {
   //transmitter->deviation=select->choice;
   if(rx->deviation==2500) {
     set_filter(rx,-4000,4000);
-    transmitter_set_filter(radio->transmitter,-4000,4000);
+    if(radio->transmitter) transmitter_set_filter(radio->transmitter,-4000,4000);
   } else {
     set_filter(rx,-8000,8000);
-    transmitter_set_filter(radio->transmitter,-8000,8000);
+    if(radio->transmitter) transmitter_set_filter(radio->transmitter,-8000,8000);
   }
   set_deviation(rx);
-  transmitter_set_deviation(radio->transmitter);
+  if(radio->transmitter) transmitter_set_deviation(radio->transmitter);
   update_vfo(rx);
   return TRUE;
 }
@@ -599,6 +599,7 @@ static void var_spin_high_cb (GtkWidget *widget, gpointer data) {
 
 static void update_filters(RECEIVER *rx) {
   int i;
+  int row;
   SELECT *select;
 
   FILTER* band_filters=filters[rx->mode_a];
@@ -647,8 +648,8 @@ g_print("update_filters: new filter grid %p\n",rx->filter_grid);
       break;
 
     default:
+      /*
       for(i=0;i<FILTERS-2;i++) {
-/*
         FILTER* band_filter=&band_filters[i];
         GtkWidget *b=gtk_button_new_with_label(band_filters[i].title);
         if(i==rx->filter_a) {
@@ -662,11 +663,12 @@ g_print("update_filters: new filter grid %p\n",rx->filter_grid);
         select->choice=i;
         g_signal_connect(b,"pressed",G_CALLBACK(filter_select_cb),(gpointer)select);
         gtk_grid_attach(GTK_GRID(rx->filter_grid),b,i%FILTER_COLUMNS,i/FILTER_COLUMNS,1,1);
-*/
       }
+      */
 
   // last 2 are var1 and var2
-      int row=1+((i+4)/5);
+      i=FILTERS-2;
+      row=1+((i+4)/5);
       FILTER* band_filter=&band_filters[i];
       GtkWidget *b=gtk_button_new_with_label(band_filters[i].title);
       if(i==rx->filter_a) {
@@ -1020,18 +1022,10 @@ void update_receiver_dialog(RECEIVER *rx) {
     gtk_widget_set_sensitive(rx->local_audio_b, TRUE);
   }
 
-  /*
-  if(rx->subrx_enable) {
-    gtk_combo_box_set_button_sensitivity(rx->audio_channels_cb, GTK_SENSITIVITY_OFF);    
-  } else {
-    gtk_combo_box_set_button_sensitivity(rx->audio_channels_cb, GTK_SENSITIVITY_ON);    
-  }
-  */
-
   g_signal_handler_unblock(G_OBJECT(rx->local_audio_b),rx->local_audio_signal_id);
   g_signal_handler_unblock(G_OBJECT(rx->audio_choice_b),rx->audio_choice_signal_id);
 
-  if(radio->transmitter!=NULL) {
+  if(radio->transmitter) {
     // update TX Frequency
     g_signal_handler_block(G_OBJECT(rx->tx_control_b),rx->tx_control_signal_id);
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (rx->tx_control_b), radio->transmitter->rx==rx);
@@ -1083,6 +1077,7 @@ GtkWidget *create_receiver_dialog(RECEIVER *rx) {
     case PROTOCOL_2:
 #ifdef SOAPYSDR
     case PROTOCOL_SOAPYSDR:
+      if(strcmp(radio->discovered->name,"sdrplay")!=0)
 #endif
       {
       int x=0;
@@ -1316,7 +1311,7 @@ GtkWidget *create_receiver_dialog(RECEIVER *rx) {
     row++;
 
     rx->tx_control_b=gtk_check_button_new_with_label("Use This Receivers Frequency");
-    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (rx->tx_control_b), radio->transmitter->rx==rx);
+    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (rx->tx_control_b), radio->transmitter!=NULL && radio->transmitter->rx==rx);
     gtk_grid_attach(GTK_GRID(tx_grid),rx->tx_control_b,0,0,1,1);
     rx->tx_control_signal_id=g_signal_connect(rx->tx_control_b,"toggled",G_CALLBACK(tx_cb),rx);
   }

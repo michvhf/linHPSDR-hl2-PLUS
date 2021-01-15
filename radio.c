@@ -102,6 +102,12 @@ fprintf(stderr,"radio_start\n");
     case PROTOCOL_1:
       protocol1_run(r);
       break;
+    case PROTOCOL_2:
+      break;
+#ifdef SOAPYSDR
+    case PROTOCOL_SOAPYSDR:
+      break;
+#endif
   }
   if(r->transmitter!=NULL) {
     update_tx_panadapter(r);
@@ -572,7 +578,7 @@ void vox_changed(RADIO *r) {
 }
 
 void frequency_changed(RECEIVER *rx) {
-    /*
+    
     // Diversity mixer hidden rx synced to the rx which is
     // visualised    
     if (radio->divmixer[rx->dmix_id] != NULL) {
@@ -581,7 +587,7 @@ void frequency_changed(RECEIVER *rx) {
         radio->divmixer[rx->dmix_id]->rx_hidden->frequency_b = rx->frequency_b;  
       }
     }  
-  */
+  
   
   if(rx->ctun) {
     gint64 offset;
@@ -600,7 +606,7 @@ void frequency_changed(RECEIVER *rx) {
     SetRXAShiftFreq(rx->channel, (double)offset);
     RXANBPSetShiftFrequency(rx->channel, (double)offset);
     
-    /*
+    
     // Diversity mixer hidden rx synced to the rx which is
     // visualised, this allow CTUN to work       
     if (radio->divmixer[rx->dmix_id] != NULL) {
@@ -611,7 +617,7 @@ void frequency_changed(RECEIVER *rx) {
         RXANBPSetShiftFrequency(channel, (double)offset);      
       }
     }
-    */
+    
 #ifdef SOAPYSDR
     if(radio->discovered->protocol==PROTOCOL_SOAPYSDR) {
       // delay setting tx frequency until transmit
@@ -684,7 +690,7 @@ void delete_receiver(RECEIVER *rx) {
       if(radio->discovered->protocol==PROTOCOL_1) {
         protocol1_stop();
       }
-      if(radio->transmitter->rx==rx) {
+      if(radio->transmitter!=NULL && radio->transmitter->rx==rx) {
         radio->transmitter->rx=NULL;
       }
       radio->receiver[i]=NULL;
@@ -700,7 +706,7 @@ g_print("delete_receiver: receivers now %d\n",radio->receivers);
     }
   }
 
-  if(radio->transmitter->rx==NULL) {
+  if(radio->transmitter!=NULL && radio->transmitter->rx==NULL) {
     if(radio->receivers>0) {
       for(i=0;i<radio->discovered->supported_receivers;i++) {
         if(radio->receiver[i]!=NULL) {
@@ -923,8 +929,27 @@ g_print("add_receiver: using receiver %d\n",i);
     }
     r->receivers++;
 g_print("add_receiver: receivers now %d\n",r->receivers);
-    if(r->discovered->protocol==PROTOCOL_2) {
-      protocol2_start_receiver(r->receiver[i]);
+    switch(r->discovered->protocol) {
+      case PROTOCOL_2:
+        protocol2_start_receiver(r->receiver[i]);
+        break;
+#ifdef SOAPYSDR
+      case PROTOCOL_SOAPYSDR:
+        soapy_protocol_create_receiver(r->receiver[i]);
+        RECEIVER *rx=r->receiver[i];
+        int adc=rx->adc;
+        soapy_protocol_set_rx_antenna(radio->receiver[i],radio->adc[adc].antenna);
+        double f=(double)(rx->frequency_a-rx->lo_a+rx->error_a);
+        soapy_protocol_set_rx_frequency(radio->receiver[i]);
+        soapy_protocol_set_automatic_gain(radio->receiver[i],radio->adc[adc].agc);
+        for(int i=0;i<radio->discovered->info.soapy.rx_gains;i++) {
+          soapy_protocol_set_gain(&radio->adc[adc]);
+        } 
+        soapy_protocol_start_receiver(rx);
+        break;
+#endif
+      default:
+        break;
     }
   } else {
 g_print("add_receiver: no receivers available\n");
@@ -1143,19 +1168,28 @@ static void create_visual(RADIO *r) {
   col++;
   row=0;
 
-  add_receiver_b=gtk_button_new_with_label("Add Receiver");
-  gtk_widget_set_name(add_receiver_b,"vfo-button");
-  //gtk_style_context_add_class(gtk_widget_get_style_context(GTK_WIDGET(add_receiver_b)),"circular");
-  g_signal_connect(add_receiver_b,"clicked",G_CALLBACK(add_receiver_cb),(gpointer)r);
-  gtk_grid_attach(GTK_GRID(r->visual),add_receiver_b,col,row,1,1);
-  gtk_widget_set_sensitive(add_receiver_b,r->receivers<r->discovered->supported_receivers);
-  row++;
+  if(r->discovered->supported_receivers>1) {
+    add_receiver_b=gtk_button_new_with_label("Add Receiver");
+    gtk_widget_set_name(add_receiver_b,"vfo-button");
+    //gtk_style_context_add_class(gtk_widget_get_style_context(GTK_WIDGET(add_receiver_b)),"circular");
+    g_signal_connect(add_receiver_b,"clicked",G_CALLBACK(add_receiver_cb),(gpointer)r);
+    gtk_grid_attach(GTK_GRID(r->visual),add_receiver_b,col,row,1,1);
+    gtk_widget_set_sensitive(add_receiver_b,r->receivers<r->discovered->supported_receivers);
+    row++;
+  }
 
-  add_wideband_b=gtk_button_new_with_label("Add Wideband");
-  gtk_widget_set_name(add_wideband_b,"vfo-button");
-  //gtk_style_context_add_class(gtk_widget_get_style_context(GTK_WIDGET(add_wideband_b)),"circular");
-  g_signal_connect(add_wideband_b,"clicked",G_CALLBACK(add_wideband_cb),(gpointer)r);
-  gtk_grid_attach(GTK_GRID(r->visual),add_wideband_b,col,row,1,1);
+#ifdef SOAPYSDR
+  if(r->discovered->protocol!=PROTOCOL_SOAPYSDR) {
+#endif
+    add_wideband_b=gtk_button_new_with_label("Add Wideband");
+    gtk_widget_set_name(add_wideband_b,"vfo-button");
+    //gtk_style_context_add_class(gtk_widget_get_style_context(GTK_WIDGET(add_wideband_b)),"circular");
+    g_signal_connect(add_wideband_b,"clicked",G_CALLBACK(add_wideband_cb),(gpointer)r);
+    gtk_grid_attach(GTK_GRID(r->visual),add_wideband_b,col,row,1,1);
+    col++;
+#ifdef SOAPYSDR
+  }
+#endif
 
   col++;
   row=0;
@@ -1214,9 +1248,9 @@ g_print("create_radio for %s %d\n",d->name,d->device);
 #ifdef SOAPYSDR
     case SOAPYSDR:
       r->sample_rate=r->discovered->info.soapy.sample_rate;
-      if(r->sample_rate==0) {
+      //if(r->sample_rate==0) {
         r->sample_rate=768000;
-      }
+      //}
       r->buffer_size=2048;
       r->alex_rx_antenna=3; // LNAW
       r->alex_tx_antenna=0; // ANT 1
@@ -1378,7 +1412,16 @@ g_print("create_radio for %s %d\n",d->name,d->device);
 
   r->region=REGION_OTHER;
 
-  r->iqswap=FALSE;
+
+  #ifdef SOAPYSDR
+  if(r->discovered->device==DEVICE_SOAPYSDR) {
+    r->iqswap=TRUE;
+  } else {
+#endif
+    r->iqswap=FALSE;
+#ifdef SOAPYSDR
+  }
+#endif
 
   r->which_audio=USE_SOUNDIO;
   r->which_audio_backend=0;

@@ -70,6 +70,27 @@ static void dmix_adc_cb(GtkWidget *widget, gpointer data) {
   SetNumStreams(dmix);
 }
 
+static void calibrate_gain_cb(GtkWidget *widget, gpointer data) {
+  DIVMIXER *dmix=(DIVMIXER *)data; 
+  dmix->calibrate_gain = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));  
+  diversity_mix_calibrate_gain_visuals(dmix);
+}
+
+static void dir_flip_cb(GtkWidget *widget, gpointer data) {
+  DIVMIXER *dmix=(DIVMIXER *)data; 
+  dmix->flip = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));  
+  
+  if (dmix->flip) {
+    dmix->phase += 180;
+  }
+  else {
+    dmix->phase -= 180;
+  }
+  
+  set_gain_phase(dmix);
+}
+
+
 GtkWidget *create_diversity_dialog(DIVMIXER *dmix) {
   int i;
   int col=0;
@@ -143,6 +164,32 @@ GtkWidget *create_diversity_dialog(DIVMIXER *dmix) {
   gtk_combo_box_set_active(GTK_COMBO_BOX(dmix_adc_combo),dmix->num_streams);
   gtk_grid_attach(GTK_GRID(grid),dmix_adc_combo,0,3,2,1);
   g_signal_connect(dmix_adc_combo,"changed",G_CALLBACK(dmix_adc_cb),dmix);
+
+  // Calibrate gain
+  GtkWidget *calibrate_gain_label = gtk_label_new("Calibrate gain:");
+  gtk_misc_set_alignment(GTK_MISC(calibrate_gain_label), 0, 0);    
+  gtk_widget_show(calibrate_gain_label);
+  gtk_grid_attach(GTK_GRID(grid), calibrate_gain_label, 0, 4, 1, 1);
+  
+  GtkWidget *calibrate_gain_b = gtk_check_button_new();
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(calibrate_gain_b), dmix->calibrate_gain);
+  gtk_widget_show(calibrate_gain_b);
+  gtk_grid_attach(GTK_GRID(grid), calibrate_gain_b, 1, 4, 1, 1);
+  g_signal_connect(calibrate_gain_b,"toggled",G_CALLBACK(calibrate_gain_cb), dmix); 
+
+
+  // 180 deg flip on phase
+  GtkWidget *dir_flip_label = gtk_label_new("Flip:");
+  gtk_misc_set_alignment(GTK_MISC(dir_flip_label), 0, 0);    
+  gtk_widget_show(dir_flip_label);
+  gtk_grid_attach(GTK_GRID(grid), dir_flip_label, 0, 5, 1, 1);
+  
+  GtkWidget *dir_flip_b = gtk_check_button_new();
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(dir_flip_b), dmix->flip);
+  gtk_widget_show(dir_flip_b);
+  gtk_grid_attach(GTK_GRID(grid), dir_flip_b, 1, 5, 1, 1);
+  g_signal_connect(dir_flip_b,"toggled",G_CALLBACK(dir_flip_cb), dmix); 
+
 
   return grid;
 }

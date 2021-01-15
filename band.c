@@ -197,7 +197,7 @@ BANDSTACK bandstack2200={2,0,bandstack_entries2200};
 BANDSTACK bandstack630={2,0,bandstack_entries630};
 BANDSTACK bandstack160={3,1,bandstack_entries160};
 BANDSTACK bandstack80={3,1,bandstack_entries80};
-BANDSTACK bandstack60={5,1,bandstack_entries60_OTHER};
+BANDSTACK bandstack60={11,1,bandstack_entries60_UK};
 BANDSTACK bandstack40={3,1,bandstack_entries40};
 BANDSTACK bandstack30={3,1,bandstack_entries30};
 BANDSTACK bandstack20={4,1,bandstack_entries20};
@@ -269,7 +269,7 @@ BANDSTACK bandstack_xvtr_7={3,0,bandstack_entries_xvtr_7};
 
 
 
-BAND bands[BANDS+XVTRS] = 
+BAND bands[BANDS+XVTRS] =
     {{"2200",&bandstack2200,0,0,0,0,0,ALEX_ATTENUATION_0dB,53.0,135700LL,137800LL,0LL,0LL,0,-140,-60,20,-145,-65,1},
      {"630",&bandstack630,0,0,0,0,0,ALEX_ATTENUATION_0dB,53.0,472000LL,479000LL,0LL,0LL,0,-140,-60,20,-145,-65,1},
      {"160",&bandstack160,0,0,0,0,0,ALEX_ATTENUATION_0dB,53.0,1810000LL,2000000LL,0LL,0LL,0,-140,-60,20,-145,-65,1},
@@ -294,8 +294,8 @@ BAND bands[BANDS+XVTRS] =
      {"3400",&bandstack3400,0,0,0,0,0,ALEX_ATTENUATION_0dB,53.0,3400000000LL,3410000000LL,0LL,0LL,0,-140,-60,20,-145,-65,1},
      {"AIR",&bandstackAIR,0,0,0,0,0,ALEX_ATTENUATION_0dB,53.0,10800000LL,137000000LL,0LL,0LL,0,-140,-60,20,-145,-65,1},
 #endif
-     {"GEN",&bandstackGEN,0,0,0,0,0,ALEX_ATTENUATION_0dB,53.0,0LL,0LL,0,-140,-60,20,-145,-65,1},
-     {"WWV",&bandstackWWV,0,0,0,0,0,ALEX_ATTENUATION_0dB,53.0,0LL,0LL,0,-140,-60,20,-145,-65,1},
+     {"GEN",&bandstackGEN,0,0,0,0,0,ALEX_ATTENUATION_0dB,53.0,0LL,0LL,0LL,0LL,0,-140,-60,20,-145,-65,1},
+     {"WWV",&bandstackWWV,0,0,0,0,0,ALEX_ATTENUATION_0dB,53.0,0LL,0LL,0LL,0LL,0,-140,-60,20,-145,-65,1},
 // XVTRS
      {"",&bandstack_xvtr_0,0,0,0,0,0,ALEX_ATTENUATION_0dB,53.0,0LL,0LL,0,-140,-60,20,-145,-65,1},
      {"",&bandstack_xvtr_1,0,0,0,0,0,ALEX_ATTENUATION_0dB,53.0,0LL,0LL,0,-140,-60,20,-145,-65,1},
@@ -552,7 +552,9 @@ void change_filters(void) {
 void bandRestoreState() {
     char* value;
     int b;
+    int stack;
     char name[128];
+    BANDSTACK_ENTRY* entry;
 
     for(b=0;b<BANDS+XVTRS;b++) {
         sprintf(name,"band.%d.title",b);
@@ -622,8 +624,42 @@ void bandRestoreState() {
         sprintf(name,"band.%d.disablePA",b);
         value=getProperty(name);
         if(value) bands[b].disablePA=atoi(value);
-    }
+        
+        for(stack=0;stack<bands[b].bandstack->entries;stack++) {
+          entry=bands[b].bandstack->entry;
+          entry+=stack;
 
+          sprintf(name,"band.%d.stack.%d.a",b,stack);
+          value=getProperty(name);
+          if(value) entry->frequency=atoll(value);
+
+          sprintf(name,"band.%d.stack.%d.mode",b,stack);
+          value=getProperty(name);
+          if(value) entry->mode=atoi(value);
+
+          sprintf(name,"band.%d.stack.%d.filter",b,stack);
+          value=getProperty(name);
+          if(value) entry->filter=atoi(value);
+
+          sprintf(name,"band.%d.stack.%d.var1Low",b,stack);
+          value=getProperty(name);
+          if(value) entry->var1Low=atoi(value);
+
+          sprintf(name,"band.%d.stack.%d.var1High",b,stack);
+          value=getProperty(name);
+          if(value) entry->var1High=atoi(value);
+
+          sprintf(name,"band.%d.stack.%d.var2Low",b,stack);
+          value=getProperty(name);
+          if(value) entry->var2Low=atoi(value);
+
+          sprintf(name,"band.%d.stack.%d.var2High",b,stack);
+          value=getProperty(name);
+          if(value) entry->var2High=atoi(value);
+
+        }
+        
+    }
     value=getProperty("band");
     if(value) band=atoi(value);
 }
@@ -635,6 +671,7 @@ int get_band_from_frequency(gint64 f) {
   for(b=0;b<BANDS+XVTRS;b++) {
     BAND *band=band_get_band(b);
     if(strlen(band->title)>0) {
+
       if(f>=band->frequencyMin && f<=band->frequencyMax) {
         found=b;
         break;
@@ -642,7 +679,7 @@ int get_band_from_frequency(gint64 f) {
     }
   }
   if (found < 0) found=bandGen;
-  return found;  
+  return found;
 }
 
 int next_band(int current_band) {
@@ -673,7 +710,7 @@ int previous_band(int current_band) {
 }
 
 void set_band(RECEIVER *rx,int band,int bs_entry) {
-  // save current bandstack 
+  // save current bandstack
   BAND *b=&bands[rx->band_a];
   BANDSTACK *stack=b->bandstack;
   BANDSTACK_ENTRY *entry=&stack->entry[stack->current_entry];

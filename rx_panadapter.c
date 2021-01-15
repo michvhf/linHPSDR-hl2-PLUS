@@ -41,6 +41,7 @@
 #include "main.h"
 #include "vfo.h"
 
+#define LINE_WIDTH 1.0
 
 int signal_vertices_size=-1;
 float *signal_vertices=NULL;
@@ -48,14 +49,24 @@ float *signal_vertices=NULL;
 static gboolean resize_timeout(void *data) {
   RECEIVER *rx=(RECEIVER *)data;
 
-g_print("rx_panadapter: resize_timeout\n");
-
   g_mutex_lock(&rx->mutex);
   rx->panadapter_width=rx->panadapter_resize_width;
   rx->panadapter_height=rx->panadapter_resize_height;
   rx->pixels=rx->panadapter_width*rx->zoom;
 
   receiver_init_analyzer(rx);
+
+  // Hidden rx may be associated with this display
+  if (radio->divmixer[rx->dmix_id] != NULL) {
+    if (radio->divmixer[rx->dmix_id]->calibrate_gain) {    
+      radio->divmixer[rx->dmix_id]->rx_hidden->panadapter_width = rx->panadapter_width;
+      radio->divmixer[rx->dmix_id]->rx_hidden->panadapter_height = rx->panadapter_height;   
+      radio->divmixer[rx->dmix_id]->rx_hidden->pixels = rx->pixels;
+      radio->divmixer[rx->dmix_id]->rx_hidden->fps = rx->fps;
+      radio->divmixer[rx->dmix_id]->rx_hidden->display_average_time = rx->display_average_time;
+      receiver_init_analyzer(radio->divmixer[rx->dmix_id]->rx_hidden);    
+    }
+  }  
 
   if (rx->panadapter_surface) {
     cairo_surface_destroy (rx->panadapter_surface);
@@ -82,7 +93,6 @@ g_print("rx_panadapter: resize_timeout\n");
       cairo_pattern_destroy(pat);
     } else {
       cairo_set_source_rgb (cr, 0.2, 0.2, 0.2);
-    //cairo_set_source_rgb (cr, 0.0, 0.0, 0.0);
       cairo_paint (cr);
     }
     cairo_destroy(cr);
@@ -272,10 +282,14 @@ GtkWidget *create_rx_panadapter(RECEIVER *rx) {
 
 static gboolean first_time=TRUE;
 
-void update_rx_panadapter(RECEIVER *rx) {
+void update_rx_panadapter(RECEIVER *rx,gboolean running) {
   int i;
   int x1,x2;
+  
+  int gain_cal_error = FALSE;
+  
   float *samples;
+  float *samples_hidden_rx;
   cairo_text_extents_t extents;
   char temp[32];
 
@@ -286,8 +300,27 @@ void update_rx_panadapter(RECEIVER *rx) {
   samples=rx->pixel_samples;
   samples[display_width-1+offset]=-200;
   double dbm_per_line=(double)display_height/((double)rx->panadapter_high-(double)rx->panadapter_low);
-  double attenuation=radio->adc[rx->adc].attenuation;
   
+  
+  double attenuation=radio->adc[rx->adc].attenuation;
+  // With diversity mixers, for calibration of gain between 2 RX, don't
+  // want adjustment of panadapter with gain
+  if (radio->divmixer[rx->dmix_id] != NULL) {
+    if (radio->divmixer[rx->dmix_id]->calibrate_gain) {
+      attenuation = 0;
+      rx->panadapter_filled = FALSE;
+      
+      if (radio->divmixer[rx->dmix_id]->rx_hidden->pixel_samples != NULL) {
+        samples_hidden_rx = radio->divmixer[rx->dmix_id]->rx_hidden->pixel_samples;
+        samples_hidden_rx[display_width-1 + offset] = -200;        
+      }
+      else {
+        gain_cal_error = TRUE;
+        g_print("Dmix gain cal error\n");
+      }
+
+    }
+  }
   
   if(radio->discovered->device==DEVICE_HERMES_LITE2) {
       attenuation = attenuation * -1;
@@ -331,14 +364,20 @@ void update_rx_panadapter(RECEIVER *rx) {
     cr = cairo_create (rx->panadapter_surface);
     cairo_select_font_face(cr, "Noto Sans", CAIRO_FONT_SLANT_NORMAL,CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 12);
-    cairo_set_line_width(cr, 1.0);
+    cairo_set_line_width(cr, LINE_WIDTH);
+
+    if(!running) {
+      SetColour(cr, WARNING);
+      cairo_set_font_size(cr, 18);
+      cairo_move_to(cr, display_width/2, display_height/2);  
+      cairo_show_text(cr, "No data - receiver thread exited");
+      cairo_destroy (cr);
+      gtk_widget_queue_draw (rx->panadapter);
+      return;
+    }
 
     if(rx->panadapter_gradient) {
-      // Set fill      
- 
-      //cairo_pattern_t *pat=cairo_pattern_create_linear(127/255, 127/255, 127/255,rx->panadapter_height);
-      
-      
+      // Set fill
       cairo_pattern_t *pat = cairo_pattern_create_radial((rx->panadapter_width / 2),
                              rx->panadapter_height + 300,
                              5,
@@ -348,12 +387,6 @@ void update_rx_panadapter(RECEIVER *rx) {
       
       cairo_pattern_add_color_stop_rgba(pat, 1, 0.1, 0.1, 0.1, 1);
       cairo_pattern_add_color_stop_rgba(pat, 0, 0.25, 0.25, 0.25, 1);      
-      
-      /*
-      cairo_pattern_t *pat=cairo_pattern_create_linear((136/255), (136/255), (136/255), rx->panadapter_height);
-      cairo_pattern_add_color_stop_rgba(pat,1.0, (48/255), (48/255), (48/255), 0.5);
-      cairo_pattern_add_color_stop_rgba(pat,0.0, (80/255), (80/255), (80/255), 0.5);      
-      */
       
       cairo_rectangle(cr, 0,0,rx->panadapter_width,rx->panadapter_height);
       cairo_set_source (cr, pat);
@@ -382,15 +415,6 @@ void update_rx_panadapter(RECEIVER *rx) {
         cairo_set_source_rgb (cr, 0.6, 0.3, 0.3);
         cairo_rectangle(cr, x1, 0.0, x2-x1, (double)display_height);
         cairo_fill(cr);
-/*
-        cairo_set_source_rgba (cr, 0.5, 1.0, 0.0, 1.0);
-        cairo_move_to(cr,(double)x1,0.0);
-        cairo_line_to(cr,(double)x1,(double)display_height);
-        cairo_stroke(cr);
-        cairo_move_to(cr,(double)x2,0.0);
-        cairo_line_to(cr,(double)x2,(double)display_height);
-        cairo_stroke(cr);
-*/
       }
     }
 
@@ -422,7 +446,7 @@ void update_rx_panadapter(RECEIVER *rx) {
       cairo_fill(cr);
     }
     
-    cairo_set_line_width (cr, 1);
+    cairo_set_line_width (cr, LINE_WIDTH);
     // plot the levels
     
     cairo_set_source_rgb (cr, 0.1, 0.1, 0.1);
@@ -493,7 +517,7 @@ void update_rx_panadapter(RECEIVER *rx) {
         divisor2=200LL*factor;
         break;
     }
-    cairo_set_line_width(cr, 1.0);
+    cairo_set_line_width(cr, LINE_WIDTH);
 
     f1=frequency-half+(long long)(rx->hz_per_pixel*offset);
     if (rx->mode_a==CWU) {
@@ -553,7 +577,7 @@ void update_rx_panadapter(RECEIVER *rx) {
           cairo_line_to(cr,(double)i,(double)display_height-20);
           cairo_stroke(cr);
         }
-        cairo_set_line_width(cr, 1.0);
+        cairo_set_line_width(cr, LINE_WIDTH);
       }
     }
     
@@ -616,6 +640,8 @@ void update_rx_panadapter(RECEIVER *rx) {
     }
     
     // signal
+    
+    
     double s2;
     
     samples[display_width-1+offset]=-200;
@@ -631,7 +657,7 @@ void update_rx_panadapter(RECEIVER *rx) {
       cairo_line_to(cr, (double)i, s2);
     }
   
-
+    
       
     if(rx->panadapter_filled) {
       cairo_close_path (cr);
@@ -644,7 +670,34 @@ void update_rx_panadapter(RECEIVER *rx) {
     }
     cairo_set_source_rgb(cr, 0.804,	0.635,	0.859);
     cairo_stroke(cr);
+    
 
+    
+    if (radio->divmixer[rx->dmix_id] != NULL) {
+      if ((radio->divmixer[rx->dmix_id]->calibrate_gain) && (!gain_cal_error)) {
+
+        // signal - hidden_rx
+        double s2_hidden_rx;
+        
+        samples_hidden_rx[display_width-1+offset]=-200;
+        
+        cairo_move_to(cr, 0.0, display_height-20);
+
+        for(i = 1; i < display_width; i++) {
+          s2_hidden_rx = (double)samples_hidden_rx[i+offset]+attenuation+radio->panadapter_calibration;
+          s2_hidden_rx = floor((rx->panadapter_high - s2_hidden_rx) *dbm_per_line);
+          if (s2_hidden_rx >= rx->panadapter_height-20) {
+            s2_hidden_rx = rx->panadapter_height-20;
+          }
+          cairo_line_to(cr, (double)i, s2_hidden_rx);
+        }
+        // turquoise
+        cairo_set_source_rgb(cr, 0.259, 0.960, 0.950);
+        cairo_stroke(cr);
+      }
+    }
+    
+    
     //SetColour(cr, BACKGROUND);
     //cairo_rectangle(cr,0,(rx->panadapter_height - 18),display_width,18);
     //cairo_fill(cr);

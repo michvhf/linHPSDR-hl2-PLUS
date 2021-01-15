@@ -42,6 +42,10 @@ typedef struct _divmixer {
   gdouble gain_fine;
   gdouble phase_fine;  
     
+  gboolean calibrate_gain;
+  gboolean flip;    
+    
+    
   RECEIVER *rx_visual;
   RECEIVER *rx_hidden;    
 
@@ -52,5 +56,6 @@ extern void diversity_add_buffer(DIVMIXER *dmix);
 extern void diversity_mix_full_buffers(DIVMIXER *dmix);
 extern void set_gain_phase(DIVMIXER *dmix);
 extern void SetNumStreams(DIVMIXER *dmix);
+extern void diversity_mix_calibrate_gain_visuals(DIVMIXER *dmix);
 
 #endif

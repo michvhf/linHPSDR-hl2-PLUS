@@ -311,7 +311,7 @@ static gpointer ozy_ep6_rx_thread(gpointer arg) {
 
   }
   // terminate
-  _exit(0);
+  //_exit(0);
 }
 #endif
 
@@ -1088,9 +1088,9 @@ void ozy_send_buffer() {
   output_buffer[SYNC2]=SYNC;
   // Multiple synchronised HL2s. Only send command to the primary HL2 (unless we 
   // specificy a specific HL2 later)
-  if ((radio->hl2 != NULL) && (radio->diversity_mixers > 0)) {
-    output_buffer[SYNC2] = HL2_SYNC_MASK_PRIMARY;
-  }
+  //if ((radio->hl2 != NULL) && (radio->diversity_mixers > 0)) {
+  //  output_buffer[SYNC2] = HL2_SYNC_MASK_PRIMARY;
+  //}
   output_buffer[C0]=0x00;
   output_buffer[C1]=0x00;
   output_buffer[C2]=0x00;
@@ -1136,9 +1136,11 @@ void ozy_send_buffer() {
     if(radio->transmitter->rx!=NULL) {
       band=band_get_band(radio->transmitter->rx->band_a);
       if(isTransmitting(radio)) {
+#ifdef USE_VFO_B_MODE_AND_FILTER
         if(radio->transmitter->rx->split) {
           band=band_get_band(radio->transmitter->rx->band_b);
         }
+#endif
         output_buffer[C2]|=band->OCtx<<1;
         if(radio->tune) {
           if(radio->OCmemory_tune_time!=0) {
@@ -1364,11 +1366,15 @@ void ozy_send_buffer() {
           BAND *band;
           if(radio->transmitter!=NULL) {
             if(radio->transmitter->rx!=NULL) {
+#ifdef USE_VFO_B_MODE_AND_FILTER
               if(radio->transmitter->rx->split) {
                 band=band_get_band(radio->transmitter->rx->band_b);
               } else {
+#endif
                 band=band_get_band(radio->transmitter->rx->band_a);
+#ifdef USE_VFO_B_MODE_AND_FILTER
               }
+#endif
             }
           }
     
@@ -1424,11 +1430,13 @@ void ozy_send_buffer() {
           output_buffer[C3]=output_buffer[C3]|0x40; // Alex 6M low noise amplifier
         }
         band=band_get_band(radio->transmitter->rx->band_a);
+#ifdef USE_VFO_B_MODE_AND_FILTER
         if(isTransmitting(radio)) {
           if(radio->transmitter->rx->split) {
             band=band_get_band(radio->transmitter->rx->band_b);
           }
         }
+#endif
         if(band->disablePA) {
           output_buffer[C3]=output_buffer[C3]|0x80; // disable PA
         }
@@ -1530,6 +1538,11 @@ void ozy_send_buffer() {
         } else {
           output_buffer[C4]=0x00;
         }
+        
+        if ((radio->hl2 != NULL) && (radio->diversity_mixers > 0)) {
+          output_buffer[SYNC2] = HL2_SYNC_MASK_PRIMARY;
+        }
+        
         break;
       case 5:
         output_buffer[C0]=0x16;
@@ -1656,8 +1669,22 @@ void ozy_send_buffer() {
             //g_print("%x\n", output_buffer[C4]);     
             //g_print("-----I2C send done\n");                 
           }
-          //else if (adc2_check_send(radio->hl2)) {
-          //}
+          else if (radio->hl2->adc2_value_to_send) {
+            g_print("Send LNA2 gain\n");
+            // Note - this will cause complications is PureSignal is implemented later
+            output_buffer[C0]=0x14;
+            output_buffer[C1]=0x00;
+            output_buffer[C2]=0x00;
+            output_buffer[C3]=0x00;
+  
+            // HL2 full AD9866 gain range -12 dB (0) to 48 dB (60)
+            output_buffer[C4]=0x40;
+            // HL2 extends into [5:0] of this buffer          
+            output_buffer[C4] |= (((int)radio->hl2->adc2_lna_gain + 12) & 0x3F);
+       
+            output_buffer[SYNC2] = HL2_SYNC_MASK_SECONDARY;            
+            radio->hl2->adc2_value_to_send = FALSE;
+          }
           else {
             // TX buffer size
             output_buffer[C0]=0x2E;
@@ -1840,4 +1867,6 @@ static void metis_send_buffer(unsigned char* buffer,int length) {
   }
 }
 
-
+gboolean protocol1_is_running() {
+  return running;
+}

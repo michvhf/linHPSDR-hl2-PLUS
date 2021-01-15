@@ -548,6 +548,14 @@ static void attenuation_value_changed_cb(GtkWidget *widget, gpointer data) {
   }
 }
 
+static void lna2_value_changed_cb(GtkWidget *widget, gpointer data) {
+  RADIO *r=(RADIO *)data;
+  if (r->hl2 != NULL) {
+    r->hl2->adc2_lna_gain = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
+    r->hl2->adc2_value_to_send = TRUE;     
+  }
+}
+
 static void enable_step_attenuation_cb(GtkWidget *widget,gpointer data) {
   ADC *adc=(ADC *)data;
   adc->enable_step_attenuation=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
@@ -908,6 +916,25 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
       gtk_grid_attach(GTK_GRID(adc1_grid),attenuation_b,4,1,1,1);
       g_signal_connect(attenuation_b,"value_changed",G_CALLBACK(attenuation_value_changed_cb),&radio->adc[1]);
       break;
+      
+    case DEVICE_HERMES_LITE2:
+      if ((radio->hl2 != NULL) && (radio->diversity_mixers > 0)) {    
+        adc1_frame = gtk_frame_new("ADC-1");
+        GtkWidget *adc1_grid = gtk_grid_new();
+        gtk_grid_set_row_homogeneous(GTK_GRID(adc1_grid), TRUE);
+        gtk_grid_set_column_homogeneous(GTK_GRID(adc1_grid), TRUE);
+        gtk_container_add(GTK_CONTAINER(adc1_frame), adc1_grid);
+        gtk_grid_attach(GTK_GRID(grid), adc1_frame, col, row++, 1, 1);    
+    
+        attenuation_label = gtk_label_new("LNA gain (dB):");
+        gtk_grid_attach(GTK_GRID(adc1_grid), attenuation_label, 0, 0, 1, 1);
+        attenuation_b = gtk_spin_button_new_with_range(-12.0, 48.0, 1.0);
+        gtk_spin_button_set_value(GTK_SPIN_BUTTON(attenuation_b), (double)radio->hl2->adc2_lna_gain);
+        gtk_grid_attach(GTK_GRID(adc1_grid), attenuation_b, 2, 0, 1, 1);
+        g_signal_connect(attenuation_b, "value_changed", G_CALLBACK(lna2_value_changed_cb), radio);
+      }
+      break;         
+      
     default:
       break;
   }
