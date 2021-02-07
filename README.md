@@ -67,7 +67,7 @@ If CWX/cwdaemon is wanted/required. You must enable it in the Makefile. Uncommen
 ### To download, compile and install linHPSDR from here
 
 ```
-  git clone https://github.com/g0orx/linhpsdr.git
+  git clone https://github.com/m5evt/linhpsdr.git
   cd linhpsdr
   make
   sudo make install
@@ -101,7 +101,7 @@ Development and testing has been run on MacOS Sierra 10.12.6 and MacOS high Sier
 ### To download, compile and install linHPSDR from https://github.com/g0orx/linhpsdr
 
 ```
-  git clone https://github.com/g0orx/linhpsdr.git
+  git clone https://github.com/m5evt/linhpsdr.git
   cd linhpsdr
   make -f Makefile.mac install
 ```
