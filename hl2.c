@@ -91,8 +91,8 @@ static gboolean mrf101data_timer_timer_cb(void *data) {
 }
 
 void HL2mrf101AdcInit(HERMESLITE2 *hl2) {
-  hl2->mrf101data_timer_id = g_timeout_add(200,mrf101data_timer_timer_cb,(gpointer)hl2); 
-  HL2i2cQueueWrite(hl2, I2C_WRITE, ADDR_MAX11645, 0x82, 0x03);
+  //hl2->mrf101data_timer_id = g_timeout_add(200,mrf101data_timer_timer_cb,(gpointer)hl2); 
+  //HL2i2cQueueWrite(hl2, I2C_WRITE, ADDR_MAX11645, 0x82, 0x03);
 }
 
 void HL2i2cQueueWrite(HERMESLITE2 *hl2, int readwrite, int addr, int command, int value) {

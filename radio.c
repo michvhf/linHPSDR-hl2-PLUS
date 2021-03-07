@@ -587,6 +587,11 @@ void frequency_changed(RECEIVER *rx) {
         radio->divmixer[rx->dmix_id]->rx_hidden->frequency_b = rx->frequency_b;  
       }
     }  
+    
+    if (radio->hl2 != NULL) {
+      // disable transmission out of ham bands      
+      if (rx->band_a == bandGen) radio->enable_pa = FALSE;
+    }
   
   
   if(rx->ctun) {
