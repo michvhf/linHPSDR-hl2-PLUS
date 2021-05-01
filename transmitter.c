@@ -826,7 +826,7 @@ static gboolean update_timer_cb(void *data) {
         if (radio->filter_board == HL2_MRF101) {
           // HL2-MFR101 filter board
           constant1 = 3.3;
-          constant2 = 0.08;  
+          constant2 = 0.09;  
           fwd_cal_offset = 6;     
         }
         else {
