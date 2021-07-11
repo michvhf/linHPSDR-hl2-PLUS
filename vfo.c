@@ -1333,7 +1333,7 @@ static gboolean frequency_a_scroll_event_cb(GtkWidget *widget,GdkEventScroll *ev
     if(event->direction==GDK_SCROLL_UP && !rx->ctun) {
       step=-step;
     }                    
-g_print("%s: digit=%d step=%lld\n",__FUNCTION__,digit,step);
+//g_print("%s: digit=%d step=%lld\n",__FUNCTION__,digit,step);
     receiver_move(rx,step,FALSE);
   }
   update_vfo(rx);
