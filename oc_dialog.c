@@ -103,7 +103,14 @@ static void oc_memory_tune_time_cb(GtkWidget *widget, gpointer data) {
 }
 
 void update_oc_dialog(RADIO *r) {
-  for (int i = 0; i < BANDS; i++) {
+  int stop_at = bandGen;
+  #ifdef SOAPYSDR
+  if(r->discovered->protocol == PROTOCOL_SOAPYSDR) {
+    stop_at = bandAIR;
+  }
+  #endif
+
+  for(int i=0; i < stop_at; i++) {  
     BAND *band=band_get_band(i);
     int mask;
     for (int j = 1; j < 8; j++) {
@@ -158,7 +165,14 @@ GtkWidget *create_oc_dialog(RADIO *radio) {
     gtk_grid_attach(GTK_GRID(grid),oc_tx_title,i+7,2,1,1);
   }
 
-  for(i=0;i<BANDS/*+XVTRS*/;i++) {
+  int stop_at = bandGen;
+  #ifdef SOAPYSDR
+  if(radio->discovered->protocol == PROTOCOL_SOAPYSDR) {
+    stop_at = bandAIR;
+  }
+  #endif
+
+  for(i=0; i <= stop_at/*+XVTRS*/; i++) {
     BAND *band=band_get_band(i);
     if(strlen(band->title)>0) {
       GtkWidget *band_label=gtk_label_new(band->title);
