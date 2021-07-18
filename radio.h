@@ -199,8 +199,6 @@ typedef struct _radio {
   long long tune_timeout;
 
   gint filter_board;
-  gboolean enable_pa;
-  gboolean psu_clk;
 
   gboolean display_filled;
 

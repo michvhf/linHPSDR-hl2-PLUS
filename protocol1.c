@@ -1163,8 +1163,9 @@ void ozy_send_buffer() {
 
 // TODO - add Alex Attenuation and Alex Antenna
     output_buffer[C3]=0x00;
-    if(radio->discovered->device==DEVICE_HERMES_LITE2) {
-      if (radio->psu_clk == FALSE) { 
+    // Hermes Lite 2 FPGA PSU clock toggle
+    if(radio->hl2 != NULL) {
+      if (radio->hl2->psu_clk == FALSE) { 
         output_buffer[C3]|=LT2208_RANDOM_ON;    
       }
     }
@@ -1413,7 +1414,16 @@ void ozy_send_buffer() {
           output_buffer[C2]|=0x02;
         }
         
-        if ((radio->discovered->device==DEVICE_HERMES_LITE2) && (radio->enable_pa)) {
+        band=band_get_band(radio->transmitter->rx->band_a);
+#ifdef USE_VFO_B_MODE_AND_FILTER
+        if(isTransmitting(radio)) {
+          if(radio->transmitter->rx->split) {
+            band=band_get_band(radio->transmitter->rx->band_b);
+          }
+        }
+#endif        
+        
+        if ((radio->hl2 != NULL) && (!band->disablePA)) {
           output_buffer[C2]|=0x2C;
         }
         else {
@@ -1429,17 +1439,12 @@ void ozy_send_buffer() {
         if(radio->transmitter->rx->band_a==band6) {
           output_buffer[C3]=output_buffer[C3]|0x40; // Alex 6M low noise amplifier
         }
-        band=band_get_band(radio->transmitter->rx->band_a);
-#ifdef USE_VFO_B_MODE_AND_FILTER
-        if(isTransmitting(radio)) {
-          if(radio->transmitter->rx->split) {
-            band=band_get_band(radio->transmitter->rx->band_b);
-          }
-        }
-#endif
-        if(band->disablePA) {
-          output_buffer[C3]=output_buffer[C3]|0x80; // disable PA
-        }
+
+        // HL2 drive level is across whole of C3
+        if (radio->hl2 == NULL) {
+          if (band->disablePA) output_buffer[C3]=output_buffer[C3]|0x80; // disable PA
+        }          
+                  
         output_buffer[C4]=0x00;
 
         switch(radio->adc[0].filters) {
@@ -1658,18 +1663,19 @@ void ozy_send_buffer() {
           if (HL2i2cWriteQueued(radio->hl2)) { 
             //g_print("-----I2C send to HL2\n");
             output_buffer[C0] = HL2i2cSendRqst(radio->hl2);                         
-            //g_print("%x\n", output_buffer[C0]);
+            //g_print("%x", output_buffer[C0]);
             output_buffer[C1] = HL2i2cReadWrite(radio->hl2);      
-            //g_print("%x\n", output_buffer[C1]);  
+            //g_print("%x", output_buffer[C1]);  
             output_buffer[C2] = HL2i2cSendTargetAddr(radio->hl2);    
-            //g_print("%x\n", output_buffer[C2]);                
+            //g_print("%x", output_buffer[C2]);                
             output_buffer[C3] = HL2i2cSendCommand(radio->hl2);        
-            //g_print("%x\n", output_buffer[C3]);            
+            //g_print("%x", output_buffer[C3]);            
             output_buffer[C4] = HL2i2cSendValue(radio->hl2);
             //g_print("%x\n", output_buffer[C4]);     
             //g_print("-----I2C send done\n");                 
           }
           else if (radio->hl2->adc2_value_to_send) {
+            // Coherent rx/diversity, send to the secondary HL2
             g_print("Send LNA2 gain\n");
             // Note - this will cause complications is PureSignal is implemented later
             output_buffer[C0]=0x14;

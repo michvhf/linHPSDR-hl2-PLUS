@@ -25,10 +25,14 @@
 
 
 #define ADDR_I2C2 0x3d
+#define ADDR_I2C1 0x3c
 #define ADDR_0X17 0x17
 
-#define I2C_WRITE 0x06
-#define I2C_READ  0x07
+#define I2C1_WRITE 0x06
+#define I2C1_READ  0x07
+
+#define I2C2_WRITE 0x0E
+#define I2C2_READ  0x0F
 
 // HL2-MRF101 bias pot
 #define ADDR_MCP4561 0x2e
@@ -44,6 +48,8 @@
 #define DUMMY_VALUE 0x00
 //#define MCP_WRITE_EEPROM
 
+#define HL2_I2C_QUEUESIZE 15
+
 #define HL2_SYNC_MASK_PRIMARY 0x7D
 #define HL2_SYNC_MASK_SECONDARY 0x7E
 
@@ -55,6 +61,8 @@ typedef struct _hermeslite2 {
   gboolean mrf101_bias_enable;
   gulong bias_signal_id;
 
+  gint64 clock2_freq;
+  gboolean xvtr;
 
   gboolean adc2_value_to_send;
   gint adc2_lna_gain;
@@ -76,26 +84,35 @@ typedef struct _hermeslite2 {
 
   gdouble mrf101_temp;
 
+  //fpga generated clocks - removes noise on 160m
+  gboolean psu_clk;
+
   gint qos_timer_id;
   gint mrf101data_timer_id;  
 
   RINGBUFFER *one_shot_queue;
+
+  gboolean cl2_enabled;
 
   GMutex i2c_mutex;  
 } HERMESLITE2;
 
 extern HERMESLITE2 *create_hl2(void);
 
-extern void HL2i2cQueueWrite(HERMESLITE2 *hl2, int readwrite, int addr, int command, int value);  
+extern void HL2i2cQueueWrite(HERMESLITE2 *hl2, int readwrite, unsigned int addr, unsigned int command, unsigned int value);
 
 extern int HL2i2cWriteQueued(HERMESLITE2 *hl2);
 
 extern int hl2_get_txbuffersize(HERMESLITE2 *hl2);
 
+extern void HL2mrf101SetBias(HERMESLITE2 *hl2);
+extern void HL2mrf101StoreBias(HERMESLITE2 *hl2);
+extern void HL2mrf101ReadBias(HERMESLITE2 *hl2);
+
 extern int HL2i2cSendRqst(HERMESLITE2 *hl2);
 extern int HL2i2cReadWrite(HERMESLITE2 *hl2);  
-extern int HL2i2cSendTargetAddr(HERMESLITE2 *hl2);
-extern int HL2i2cSendCommand(HERMESLITE2 *hl2);
+extern unsigned int HL2i2cSendTargetAddr(HERMESLITE2 *hl2);
+extern unsigned int HL2i2cSendCommand(HERMESLITE2 *hl2);
 extern int HL2i2cSendValue(HERMESLITE2 *hl2);
 
 extern void HL2i2cProcessReturnValue(HERMESLITE2 *hl2, unsigned char c0,

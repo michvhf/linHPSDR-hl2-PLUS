@@ -588,17 +588,7 @@ void frequency_changed(RECEIVER *rx) {
       }
     }  
     
-    if (radio->hl2 != NULL) {
-      // disable transmission out of ham bands      
-      if (rx->band_a == bandGen) {
-        radio->enable_pa = FALSE;
-      }
-      else {
-        radio->enable_pa = TRUE;        
-      }
-    }
-  
-  
+    
   if(rx->ctun) {
     gint64 offset;
     rx->ctun_offset=rx->ctun_frequency-rx->frequency_a;
@@ -1369,10 +1359,6 @@ g_print("create_radio for %s %d\n",d->name,d->device);
   r->oc_tx_signal_id = g_new0(gulong, BANDS * 8);
   r->oc_rx_signal_id = g_new0(gulong, BANDS * 8);  
   
-  // Hermes lite 2
-  r->enable_pa = TRUE;
-  r->psu_clk = TRUE;
-
   r->adc[0].id=0;
   r->adc[0].antenna=ANTENNA_1;
   r->adc[0].filters=AUTOMATIC;

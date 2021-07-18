@@ -56,26 +56,26 @@ static void pa_value_changed_cb(GtkWidget *widget, gpointer data) {
   }
 }
 
+static void pa_disable_changed_cb(GtkWidget *widget, gpointer data) {
+  BAND *band=(BAND *)data;
+
+  band->disablePA = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+  //if(radio->discovered->protocol==PROTOCOL_2) {
+  //  protocol2_high_priority();
+  //}
+}
+
 static void hl2mrf_bias_save_cb(GtkWidget *widget,gpointer data) { 
   HERMESLITE2 *hl2=(HERMESLITE2 *)data;  
-
   g_print("Saving bias value %d\n", radio->hl2->mrf101_bias_value);
-  
-  // I2C address for the digital pot 
-  int addr = MCP4662_BIAS0;
-  addr |= ((addr << 4) & 0xff);
-  g_print("Using addr %x", addr);
-  HL2i2cQueueWrite(hl2, I2C_WRITE, ADDR_MCP4561, addr, hl2->mrf101_bias_value);
+  HL2mrf101StoreBias(hl2);
 }
 
 static void hl2mrf_bias_changed_cb(GtkWidget *widget, gpointer data) {
   HERMESLITE2 *hl2=(HERMESLITE2 *)data;
   hl2->mrf101_bias_value = (int)gtk_range_get_value(GTK_RANGE(widget));
   g_print("Set bias %i\n", hl2->mrf101_bias_value);
-  // Write value without saving to EEPROM
-  int addr = MCP4662_BIAS0;
-  addr |= ((addr << 4) & 0xff);  
-  HL2i2cQueueWrite(hl2, I2C_WRITE, ADDR_MCP4561, 0, hl2->mrf101_bias_value);
+  HL2mrf101SetBias(hl2);
 }
 
 static void enable_bias_cb(GtkWidget *widget, gpointer data) {
@@ -109,21 +109,34 @@ GtkWidget *create_pa_dialog(RADIO *r) {
   GtkWidget *pa_grid=gtk_grid_new();
   gtk_grid_set_row_homogeneous(GTK_GRID(pa_grid),FALSE);
   gtk_grid_set_column_homogeneous(GTK_GRID(pa_grid),FALSE);
-  gtk_grid_set_column_spacing(GTK_GRID(pa_grid),10);
+  gtk_grid_set_column_spacing(GTK_GRID(pa_grid),15);
   gtk_container_add(GTK_CONTAINER(pa_frame),pa_grid);
   gtk_grid_attach(GTK_GRID(grid),pa_frame,col,row++,1,1);
 
-  for(i=0;i<bandGen;i++) {
+  int stop_at = bandGen;
+  #ifdef SOAPYSDR
+  if(radio->discovered->protocol == PROTOCOL_SOAPYSDR) {
+    stop_at = bandAIR;
+  }
+  #endif
+
+  for(i=0; i <= stop_at; i++) {
     BAND *band=band_get_band(i);
 
     GtkWidget *band_label=gtk_label_new(band->title);
     gtk_widget_show(band_label);
-    gtk_grid_attach(GTK_GRID(pa_grid),band_label,(i%3)*2,i/3,1,1);
+    gtk_grid_attach(GTK_GRID(pa_grid),band_label,(i%3)*3,i/3,1,1);
 
+    GtkWidget *pa_disable_b = gtk_check_button_new();
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pa_disable_b), band->disablePA);
+    gtk_widget_show(pa_disable_b);   
+    gtk_grid_attach(GTK_GRID(pa_grid), pa_disable_b, ((i%3)*3)+1,i/3,1,1);
+    g_signal_connect(pa_disable_b,"toggled",G_CALLBACK(pa_disable_changed_cb), band); 
+    
     GtkWidget *pa_r=gtk_spin_button_new_with_range(38.8,100.0,0.1);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(pa_r),(double)band->pa_calibration);
     gtk_widget_show(pa_r);
-    gtk_grid_attach(GTK_GRID(pa_grid),pa_r,((i%3)*2)+1,i/3,1,1);
+    gtk_grid_attach(GTK_GRID(pa_grid),pa_r,((i%3)*3)+2,i/3,1,1);
     g_signal_connect(pa_r,"value_changed",G_CALLBACK(pa_value_changed_cb),band);
   }
   
@@ -133,11 +146,7 @@ GtkWidget *create_pa_dialog(RADIO *r) {
     
     // ****************** TEMP
     // Read the stored bias  
-    int addr = MCP4662_BIAS0;
-    g_print("addr %d\n", addr);
-    addr = ((addr << 4) & 0xff) | 0x0c;
-    g_print("addr %d\n", addr);    
-    HL2i2cQueueWrite(r->hl2, I2C_READ, ADDR_MCP4561, addr, DUMMY_VALUE);
+    HL2mrf101ReadBias(r->hl2);
     // ****************** TEMP    
 
     

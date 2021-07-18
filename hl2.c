@@ -51,6 +51,7 @@
 #include "rigctl.h"
 #include "subrx.h"
 #include "audio.h"
+#include "math.h"
 
 // These functions mainly support i2c read/write for the hl2.
 // See https://github.com/softerhardware/Hermes-Lite2/wiki/Protocol
@@ -85,7 +86,7 @@ static gboolean qos_timer_cb(void *data) {
 static gboolean mrf101data_timer_timer_cb(void *data) {
   HERMESLITE2 *hl2=(HERMESLITE2 *)data; 
   
-  HL2i2cQueueWrite(hl2, I2C_READ, ADDR_MAX11645, 0x01, 0x00);
+  HL2i2cQueueWrite(hl2, I2C2_READ, ADDR_MAX11645, 0x01, 0x00);
   
   return TRUE;
 }
@@ -95,9 +96,32 @@ void HL2mrf101AdcInit(HERMESLITE2 *hl2) {
   //HL2i2cQueueWrite(hl2, I2C_WRITE, ADDR_MAX11645, 0x82, 0x03);
 }
 
-void HL2i2cQueueWrite(HERMESLITE2 *hl2, int readwrite, int addr, int command, int value) {
+void HL2mrf101SetBias(HERMESLITE2 *hl2) {
+  // Write value without saving to EEPROM
+  int addr = MCP4662_BIAS0;
+  addr |= ((addr << 4) & 0xff);  
+  HL2i2cQueueWrite(hl2, I2C2_WRITE, ADDR_MCP4561, 0, hl2->mrf101_bias_value);
+}
   
-  long combined = 0;
+void HL2mrf101StoreBias(HERMESLITE2 *hl2) {  
+    // I2C address for the digital pot 
+  int addr = MCP4662_BIAS0;
+  addr |= ((addr << 4) & 0xff);
+  g_print("Using addr %x", addr);
+  HL2i2cQueueWrite(hl2, I2C2_WRITE, ADDR_MCP4561, addr, hl2->mrf101_bias_value);
+}
+  
+void HL2mrf101ReadBias(HERMESLITE2 *hl2) {
+  int addr = MCP4662_BIAS0;
+  g_print("addr %d\n", addr);
+  addr = ((addr << 4) & 0xff) | 0x0c;
+  g_print("addr %d\n", addr);    
+  HL2i2cQueueWrite(hl2, I2C2_READ, ADDR_MCP4561, addr, DUMMY_VALUE);  
+}
+
+void HL2i2cQueueWrite(HERMESLITE2 *hl2, int readwrite, unsigned int addr, unsigned int command, unsigned int value) {
+  //g_print("value %2x\n", value);  
+  unsigned long combined = 0;
   
   combined |= (readwrite << 24) & 0xFFFFFFFF;
   
@@ -105,17 +129,18 @@ void HL2i2cQueueWrite(HERMESLITE2 *hl2, int readwrite, int addr, int command, in
   addr |= 0x80;
   //g_print("%x\n", addr);
   combined |= (addr << 16) & 0xFFFFFFFF;
-  //g_print("addr %6lx\n", combined);
   combined |= (command << 8) & 0xFFFFFFFF;
-  //g_print("command %6lx\n", combined);  
+  g_print("command %6lx\n", combined); 
+  value = value & 0xFF; 
+  g_print("value %2x\n", value);    
   combined |= (value) & 0xFFFFFFFF;
-  //g_print("add to buffer %6lx\n", combined);
+    
+  g_print("add to buffer %6lx\n", combined);
   
   g_mutex_lock(&hl2->i2c_mutex);
   queue_put(hl2->one_shot_queue, combined);
   g_mutex_unlock(&hl2->i2c_mutex);
 }
-
 
 void adc2_set_lna_gain(HERMESLITE2 *hl2, int gain) {
   hl2->adc2_lna_gain = gain;
@@ -155,12 +180,14 @@ int HL2i2cWriteQueued(HERMESLITE2 *hl2) {
 
 // Is this command an i2c read or write?
 int HL2i2cReadWrite(HERMESLITE2 *hl2) {
-  return hl2->value_to_send >> 24 & 0xFF;
+  //return hl2->value_to_send >> 24 & 0xFF;
+  return hl2->value_to_send >> 24 & 0x7;  
+  
 }
 
 // We need to know which address we are waiting for the HL2 to send back
 // data for (when it is ready) 
-int HL2i2cSendTargetAddr(HERMESLITE2 *hl2) {
+unsigned int  HL2i2cSendTargetAddr(HERMESLITE2 *hl2) {
   hl2->addr_waiting_for = hl2->value_to_send >> 16 & 0xFF;
   //g_print("Waiting for addr %x\n", hl2->addr_waiting_for);
   return hl2->addr_waiting_for;
@@ -168,7 +195,7 @@ int HL2i2cSendTargetAddr(HERMESLITE2 *hl2) {
 
 // We need to know which command we are waiting for the HL2 to send back
 // data for (when it is ready)
-int HL2i2cSendCommand(HERMESLITE2 *hl2) {
+unsigned int HL2i2cSendCommand(HERMESLITE2 *hl2) {
   hl2->command_waiting_for = hl2->value_to_send >> 8 & 0xFF;
   //g_print("Waiting for command %i\n", hl2->command_waiting_for);  
   return hl2->command_waiting_for;
@@ -180,9 +207,26 @@ int HL2i2cSendValue(HERMESLITE2 *hl2) {
 }
 
 int HL2i2cSendRqst(HERMESLITE2 *hl2) {
-  int rqst = (ADDR_I2C2 << 1) & 0xFF; 
+  int rqst;
+  
+  //g_print("send: %6lx\n", hl2->value_to_send);  
+  //g_print("i2c flag: %lx\n", (hl2->value_to_send & 0x8000000));  
+  //g_print("i2c flag: %lx\n", hl2->value_to_send);
+  //g_print("i2c flag: %lx\n", (hl2->value_to_send & 0x8000000) >> 27);
+
+  // 19th bit of the command to send denotes if it is an i2c2 or i2c1 command
+  // i2c1 -> 0 or i2c2 -> 1
+  if ((hl2->value_to_send & 0x8000000) >> 27) {
+    rqst = (ADDR_I2C2 << 1) & 0xFF; 
+    //g_print("i2c2\n");
+  }
+  else {
+    rqst = (ADDR_I2C1 << 1) & 0xFF; 
+    //g_print("i2c1\n");    
+  }
+    
   //g_print("rqst %x\n", rqst);
-  if ((hl2->value_to_send >> 24 & 0xFF) == I2C_READ) {
+  if ((hl2->value_to_send >> 24 & 0x7) == I2C1_READ) {
     //g_print("Read\n");
     // Set bit 7 of metis C[0] for a rqst
     rqst |= 0x80;
@@ -279,7 +323,7 @@ void HL2i2cProcessReturnValue(HERMESLITE2 *hl2, unsigned char c0,
 HERMESLITE2 *create_hl2(void) {
   HERMESLITE2 *hl2=g_new0(HERMESLITE2,1);
   
-  hl2->one_shot_queue = create_long_ringbuffer(10, 0);
+  hl2->one_shot_queue = create_long_ringbuffer(HL2_I2C_QUEUESIZE, 0);
     
   hl2->addr_waiting_for = 0;
   hl2->command_waiting_for = 0;
@@ -297,6 +341,8 @@ HERMESLITE2 *create_hl2(void) {
   hl2->overflow = FALSE;
   hl2->underflow = FALSE;
   
+  hl2->psu_clk = TRUE;
+  
   hl2->late_packets = 0;
   hl2->ep6_error_ctr = 0;
   hl2->mrf101_temp = 0;
@@ -305,6 +351,10 @@ HERMESLITE2 *create_hl2(void) {
   if (radio->filter_board == HL2_MRF101) {
     HL2mrf101AdcInit(hl2);      
   }
+  
+  
+  hl2->cl2_enabled = FALSE;
+  hl2->xvtr = FALSE;
   
   return hl2;
 }

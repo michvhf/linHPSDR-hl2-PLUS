@@ -481,7 +481,7 @@ static void cw_keyer_sidetone_frequency_value_changed_cb(GtkWidget *widget, gpoi
 
 static void psu_clk_cb(GtkWidget *widget, gpointer data) {
   RADIO *radio=(RADIO *)data;
-  radio->psu_clk=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+  if (radio->hl2 != NULL) radio->hl2->psu_clk = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 }
 
 static void region_cb(GtkWidget *widget, gpointer data) {
@@ -534,10 +534,10 @@ static void iqswap_changed_cb(GtkWidget *widget, gpointer data) {
   r->iqswap=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 }
 
-static void enablepa_changed_cb(GtkWidget *widget, gpointer data) {
-  RADIO *r=(RADIO *)data;
-  r->enable_pa=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
-}
+//static void enablepa_changed_cb(GtkWidget *widget, gpointer data) {
+//  BAND *band = (BAND *)data; 
+//  band->disablePA = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+//}
 
 static void attenuation_value_changed_cb(GtkWidget *widget, gpointer data) {
   ADC *adc=(ADC *)data;
@@ -654,10 +654,11 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
   gtk_grid_attach(GTK_GRID(model_grid),model_combo_box,x,0,1,1);
   x++;
   if ((radio->discovered->device == DEVICE_HERMES_LITE2) || (radio->discovered->device == DEVICE_HERMES_LITE)) {
-    GtkWidget *paswap=gtk_check_button_new_with_label("Enable PA");
-    gtk_grid_attach(GTK_GRID(model_grid),paswap,x,0,1,1);
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(paswap),radio->enable_pa);
-    g_signal_connect(paswap,"toggled",G_CALLBACK(enablepa_changed_cb),radio);
+    
+    //GtkWidget *paswap=gtk_check_button_new_with_label("Disable PA");
+    //gtk_grid_attach(GTK_GRID(model_grid),paswap,x,0,1,1);
+    //gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(paswap),radio->enable_pa);
+    //g_signal_connect(paswap,"toggled",G_CALLBACK(enablepa_changed_cb),band);
   }
   else {
     GtkWidget *iqswap=gtk_check_button_new_with_label("Swap I & Q");
@@ -766,10 +767,12 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
       gtk_grid_attach(GTK_GRID(adc0_grid),attenuation_b,2,0,1,1);
       g_signal_connect(attenuation_b,"value_changed",G_CALLBACK(attenuation_value_changed_cb),&radio->adc[0]);
 
-      disable_fpgaclk_b=gtk_check_button_new_with_label("FPGA PSU clock");
-      gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (disable_fpgaclk_b), radio->psu_clk);
-      gtk_grid_attach(GTK_GRID(adc0_grid),disable_fpgaclk_b,0,1,1,1);
-      g_signal_connect(disable_fpgaclk_b,"toggled",G_CALLBACK(psu_clk_cb),radio);
+      if (radio->hl2 != NULL) {
+        disable_fpgaclk_b=gtk_check_button_new_with_label("FPGA PSU clock");
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (disable_fpgaclk_b), radio->hl2->psu_clk);
+        gtk_grid_attach(GTK_GRID(adc0_grid),disable_fpgaclk_b,0,1,1,1);
+        g_signal_connect(disable_fpgaclk_b,"toggled",G_CALLBACK(psu_clk_cb),radio);
+      }
       break;    
 
     case DEVICE_HERMES_LITE:

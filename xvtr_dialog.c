@@ -51,6 +51,7 @@ static GtkWidget *max_frequency[BANDS+XVTRS];
 static GtkWidget *lo_frequency[BANDS+XVTRS];
 static GtkWidget *lo_error[BANDS+XVTRS];
 static GtkWidget *disable_pa[BANDS+XVTRS];
+static GtkWidget *pa_calibration[BANDS+XVTRS];
 
 void save_xvtr () {
   int i;
@@ -186,6 +187,13 @@ void lo_error_update(int band,long long offset) {
   }
 }
 
+static void pa_xvtr_value_changed_cb(GtkWidget *widget, gpointer user_data) {
+  int band = GPOINTER_TO_INT(user_data);
+  BAND *xvtr=band_get_band(band);
+  xvtr->pa_calibration = gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget));
+  update_receiver(band,FALSE);    
+}
+
 GtkWidget *create_xvtr_dialog(RADIO *radio) {
   int row;
   int col;
@@ -210,6 +218,11 @@ GtkWidget *create_xvtr_dialog(RADIO *radio) {
   gtk_grid_attach(GTK_GRID(grid),label,col++,row,1,1);
   label=gtk_label_new("Disable PA");
   gtk_grid_attach(GTK_GRID(grid),label,col++,row,1,1);
+
+  if (radio->hl2 != NULL) {
+    label=gtk_label_new("PA Calibration");
+    gtk_grid_attach(GTK_GRID(grid),label,col++,row,1,1);
+  }
 
   row++;
   col=0;
@@ -253,6 +266,14 @@ GtkWidget *create_xvtr_dialog(RADIO *radio) {
     disable_pa[i]=gtk_check_button_new();
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(disable_pa[i]),xvtr->disablePA);
     gtk_grid_attach(GTK_GRID(grid),disable_pa[i],col++,row,1,1);
+
+    if (radio->hl2 != NULL) {
+      pa_calibration[i] = gtk_spin_button_new_with_range(38.8,100.0,0.1);
+      gtk_spin_button_set_value(GTK_SPIN_BUTTON(pa_calibration[i]),(double)xvtr->pa_calibration);
+      gtk_widget_show(pa_calibration[i]);    
+      gtk_grid_attach(GTK_GRID(grid),pa_calibration[i],col++,row,1,1);
+      g_signal_connect(pa_calibration[i],"changed",G_CALLBACK(pa_xvtr_value_changed_cb),GINT_TO_POINTER(i));
+    }
 
     row++;
     col=0;
