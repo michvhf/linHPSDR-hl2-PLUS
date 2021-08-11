@@ -589,7 +589,6 @@ static void cwdaemon_cb(GtkWidget *widget, gpointer data) {
     gtk_widget_set_sensitive(cw_keyer_sidetone_level_b, FALSE);  
     gtk_widget_set_sensitive(cw_cwd_sidetone_b, FALSE);         
     gtk_widget_set_sensitive(cwport, FALSE);  
-    
   } 
   else {
     cwdaemon_stop();
@@ -1265,6 +1264,17 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
       g_signal_connect(cw_cwd_sidetone_b,"toggled",G_CALLBACK(cw_cwd_sidetone_cb),radio);      
     }
   }
+  
+  if(radio->cwdaemon) {   
+    // CWdaemon now has control over keyer settings, user can't modify
+    gtk_widget_set_sensitive(cw_keyer_speed_b, FALSE);    
+    gtk_widget_set_sensitive(cw_keyer_sidetone_frequency_b, FALSE);
+    gtk_widget_set_sensitive(cw_keyer_weight_b, FALSE);
+    gtk_widget_set_sensitive(cw_keyer_sidetone_level_b, FALSE);  
+    gtk_widget_set_sensitive(cw_cwd_sidetone_b, FALSE);         
+    gtk_widget_set_sensitive(cwport, FALSE);  
+  }   
+  
   #endif
   GtkWidget *cw_keyer_delay_label=gtk_label_new("Break In Delay (Ms):");
   gtk_widget_show(cw_keyer_delay_label);
