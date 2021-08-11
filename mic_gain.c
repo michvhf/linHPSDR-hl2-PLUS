@@ -33,6 +33,8 @@
 #include "main.h"
 #include "mic_gain.h"
 #include "vfo.h"
+#include "level_meter.h"
+
 
 static char *title="Microphone Gain";
 
@@ -41,7 +43,6 @@ static gboolean mic_gain_configure_event_cb(GtkWidget *widget,GdkEventConfigure 
 }
 
 static gboolean mic_gain_draw_cb(GtkWidget *widget,cairo_t *cr,gpointer data) {
-  double x;
   cairo_text_extents_t extents;
   char t[32];
 
@@ -49,30 +50,18 @@ static gboolean mic_gain_draw_cb(GtkWidget *widget,cairo_t *cr,gpointer data) {
   int height=gtk_widget_get_allocated_height(widget);
   double bar_width=(double)width-10;
 
-  cairo_set_line_width(cr,1.0);
-
-  SetColour(cr, BACKGROUND);
-  cairo_rectangle(cr,0,0,width,height);
-  cairo_fill(cr);
-
   double v=radio->transmitter->mic_gain+10.0; // move from rabd -10..50 to range 0..60
-  x=(bar_width/60.0)*v;
+  double x = (bar_width/60.0)*v;
 
-  SetColour(cr, BOX_ON);
-  cairo_rectangle(cr,5,0,x,(height/2)-1);
-  cairo_fill(cr);
+  level_meter_draw(cr, x, width, height, TEXT_B);
 
-  SetColour(cr, TEXT_B);
-  cairo_move_to(cr,5,height/2);
-  cairo_line_to(cr,width-5,height/2);
-  cairo_stroke(cr);
-
-  SetColour(cr, TEXT_B);
+  // 0 dB marker
+  SetColour(cr, WARNING);
   x=(10.0/60.0)*(double)bar_width;
   cairo_move_to(cr,x+5.0,(double)(height/2)-8.0);
   cairo_line_to(cr,x+5.0,height/2-1);
-  cairo_stroke(cr);
-
+  cairo_stroke(cr);  
+  
   SetColour(cr, TEXT_B);
   cairo_select_font_face(cr, "Noto Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);  
   cairo_set_font_size(cr,10);

@@ -141,6 +141,7 @@ rigctl.c \
 bpsk.c \
 ringbuffer.c \
 hl2.c \
+level_meter.c \
 subrx.c
 
 HEADERS=\
@@ -197,6 +198,7 @@ rigctl.h \
 bpsk.h \
 ringbuffer.h \
 hl2.h \
+level_meter.h \
 subrx.h
 
 OBJS=\
@@ -252,6 +254,7 @@ rigctl.o \
 bpsk.o \
 ringbuffer.o \
 hl2.o \
+level_meter.o \
 subrx.o
 
 

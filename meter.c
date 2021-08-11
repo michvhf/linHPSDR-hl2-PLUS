@@ -33,6 +33,7 @@
 #include "meter.h"
 #include "main.h"
 #include "vfo.h"
+#include "level_meter.h"
 
 typedef struct _choice {
   RECEIVER *rx;

@@ -32,6 +32,7 @@
 #include "main.h"
 #include "mic_level.h"
 #include "vfo.h"
+#include "level_meter.h"
 
 static char *title="Microphone Level";
 
@@ -132,40 +133,16 @@ void update_mic_level(RADIO *r) {
     int height=gtk_widget_get_allocated_height(r->mic_level);
     int bar_width=width-10;
 
-    cairo_set_line_width(cr,1.0);
-
-    SetColour(cr, BACKGROUND);
-    cairo_rectangle(cr,0,0,width,height);
-    cairo_fill(cr);
-
     double peak=radio->vox_peak*(double)bar_width;
-    SetColour(cr, WARNING);
-    cairo_rectangle(cr,5,0,peak,(height/2)-1);
-    cairo_fill(cr);
     
-    SetColour(cr, BOX_ON);
+    level_meter_draw(cr, peak, width, height, INFO_ON);    
+    
+    // Vox threshold marker
+    SetColour(cr, WARNING);
     double threshold=radio->vox_threshold*(double)bar_width;
     cairo_move_to(cr,threshold+5.0,1);
     cairo_line_to(cr,threshold+5.0,height/2);
     cairo_stroke(cr);
-
-    
-    SetColour(cr, TEXT_B);
-    cairo_move_to(cr,5,height/2);
-    cairo_line_to(cr,width-5,height/2);
-    cairo_stroke(cr);
-
-    SetColour(cr, TEXT_B);
-    for(i=0;i<=100;i+=25) {
-      x=((double)i/100.0)*(double)bar_width;
-      if((i%50)==0) {
-        cairo_move_to(cr,x+5.0,(double)(height/2)-8.0);
-      } else {
-        cairo_move_to(cr,x+5.0,(double)(height/2)-3.0);
-      }
-      cairo_line_to(cr,x+5.0,height/2-1);
-      cairo_stroke(cr);
-    }
 
     SetColour(cr, TEXT_B);    
     cairo_select_font_face(cr, "Noto Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);    

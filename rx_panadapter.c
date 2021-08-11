@@ -40,6 +40,7 @@
 #include "radio.h"
 #include "main.h"
 #include "vfo.h"
+#include "level_meter.h"
 
 #define LINE_WIDTH 1.0
 
@@ -423,7 +424,18 @@ void update_rx_panadapter(RECEIVER *rx,gboolean running) {
     cairo_set_source_rgba (cr, 0.5, 0.5, 0.5, 0.75);
     double filter_left=((double)rx->pixels/2.0)-(double)rx->pan+(((double)rx->filter_low_a+rx->ctun_offset)/rx->hz_per_pixel);
     double filter_right=((double)rx->pixels/2.0)-(double)rx->pan+(((double)rx->filter_high_a+rx->ctun_offset)/rx->hz_per_pixel);
+    
+    
+    cairo_pattern_t *pat3 = cairo_pattern_create_linear(filter_left, 0, filter_left, (double)display_height);
+  
+    //cairo_pattern_add_color_stop_rgb(pat3, 0.01, 0.1, 0.1, 0.1);
+    cairo_pattern_add_color_stop_rgba(pat3, 0.1, 0.5, 0.5, 0.5, 0.75);
+    cairo_pattern_add_color_stop_rgb(pat3, 0.7, 0.1, 0.1, 0.1);
+  
     cairo_rectangle(cr, filter_left, 0.0, filter_right-filter_left, (double)display_height);
+    
+    cairo_set_source(cr, pat3);
+    
     cairo_fill(cr);
     
     // Show VFO B (tx) for split mode

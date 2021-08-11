@@ -31,6 +31,7 @@
 #include "transmitter.h"
 #include "radio.h"
 #include "vfo.h"
+#include "level_meter.h"
 //#include "transmitter_dialog.h"
 #include "configure_dialog.h"
 #include "main.h"

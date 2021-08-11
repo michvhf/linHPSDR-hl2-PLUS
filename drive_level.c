@@ -37,6 +37,7 @@
 #include "drive_level.h"
 #include "protocol2.h"
 #include "vfo.h"
+#include "level_meter.h"
 
 static char *title="Drive";
 
@@ -45,44 +46,21 @@ static gboolean drive_level_configure_event_cb(GtkWidget *widget,GdkEventConfigu
 }
 
 static gboolean drive_level_draw_cb(GtkWidget *widget,cairo_t *cr,gpointer data) {
-  double x;
   cairo_text_extents_t extents;
   char t[32];
-  int i;
-
+ 
   int width=gtk_widget_get_allocated_width(widget);
   int height=gtk_widget_get_allocated_height(widget);
+ 
   double bar_width=(double)width-10;
 
   cairo_set_line_width(cr,1.0);
 
-  SetColour(cr, BACKGROUND);
-  cairo_rectangle(cr,0,0,width,height);
-  cairo_fill(cr);
-
   double v=radio->transmitter->drive;
-  x=(bar_width/100.0)*v;
-  SetColour(cr, TEXT_C);
-  cairo_rectangle(cr,5,0,x,(height/2)-1);
-  cairo_fill(cr);
-
-  SetColour(cr, TEXT_B);
-  cairo_move_to(cr,5,height/2);
-  cairo_line_to(cr,width-5,height/2);
-  cairo_stroke(cr);
-
-  SetColour(cr, TEXT_B);
-  for(i=0;i<=100;i+=25) {
-    x=((double)i/100.0)*(double)bar_width;
-    if((i%50)==0) {
-      cairo_move_to(cr,x+5.0,(double)(height/2)-8.0);
-    } else {
-      cairo_move_to(cr,x+5.0,(double)(height/2)-3.0);
-    }
-    cairo_line_to(cr,x+5.0,height/2-1);
-    cairo_stroke(cr);
-  }
-
+  double x=(bar_width/100.0)*v;
+  
+  level_meter_draw(cr, x, width, height, TEXT_A);
+  
   SetColour(cr, TEXT_B);
   cairo_select_font_face(cr, "Noto Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);  
   cairo_set_font_size(cr,10);
