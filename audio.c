@@ -1053,10 +1053,13 @@ static void source_list_cb(pa_context *context,const pa_source_info *s,int eol,v
     }
   } else if(n_input_devices<MAX_AUDIO_DEVICES) {
     input_devices[n_input_devices].name=g_new0(char,strlen(s->name)+1);
-    strncpy(input_devices[n_input_devices].name,s->name,strlen(s->name));
+    memcpy(input_devices[n_input_devices].name, s->name, strlen(s->name));
+    
     input_devices[n_input_devices].description=g_new0(char,strlen(s->description)+1);
-    strncpy(input_devices[n_input_devices].description,s->description,strlen(s->description));
+    memcpy(input_devices[n_input_devices].description,s->description, strlen(s->description));
+    
     input_devices[n_input_devices].index=s->index;
+    
     n_input_devices++;
   }
 }
@@ -1070,9 +1073,9 @@ static void sink_list_cb(pa_context *context,const pa_sink_info *s,int eol,void 
     op=pa_context_get_source_info_list(pa_ctx,source_list_cb,NULL);
   } else if(n_output_devices<MAX_AUDIO_DEVICES) {
     output_devices[n_output_devices].name=g_new0(char,strlen(s->name)+1);
-    strncpy(output_devices[n_output_devices].name,s->name,strlen(s->name));
+    memcpy(output_devices[n_output_devices].name,s->name,strlen(s->name));
     output_devices[n_output_devices].description=g_new0(char,strlen(s->description)+1);
-    strncpy(output_devices[n_output_devices].description,s->description,strlen(s->description));
+    memcpy(output_devices[n_output_devices].description,s->description,strlen(s->description));
     output_devices[n_output_devices].index=s->index;
     n_output_devices++;
   }
@@ -1158,9 +1161,9 @@ g_print("audio: create_audio: USE_SOUNDIO: %d %s\n",soundio_get_backend(soundio,
           }
 
           output_devices[n_output_devices].name=g_new0(char,strlen(device->name)+1);
-          strncpy(output_devices[n_output_devices].name,device->name,strlen(device->name));
+          memcpy(output_devices[n_output_devices].name,device->name,strlen(device->name));
           output_devices[n_output_devices].description=g_new0(char,strlen(device->name)+1);
-          strncpy(output_devices[n_output_devices].description,device->name,strlen(device->name));
+          memcpy(output_devices[n_output_devices].description,device->name,strlen(device->name));
           output_devices[n_output_devices].index=i;
           soundio_device_unref(device);
           n_output_devices++;
@@ -1171,9 +1174,9 @@ g_print("audio: create_audio: USE_SOUNDIO: %d %s\n",soundio_get_backend(soundio,
         if(n_input_devices<MAX_AUDIO_DEVICES) {
           struct SoundIoDevice *device=soundio_get_input_device(soundio,i);
           input_devices[n_input_devices].name=g_new0(char,strlen(device->name)+1);
-          strncpy(input_devices[n_input_devices].name,device->name,strlen(device->name));
+          memcpy(input_devices[n_input_devices].name,device->name,strlen(device->name));
           input_devices[n_input_devices].description=g_new0(char,strlen(device->name)+1);
-          strncpy(input_devices[n_input_devices].description,device->name,strlen(device->name));
+          memcpy(input_devices[n_input_devices].description,device->name,strlen(device->name));
           input_devices[n_input_devices].index=i;
           soundio_device_unref(device);
           n_input_devices++;
