@@ -17,20 +17,5 @@
 *
 */
 
-#ifndef RINGBUFFER_H
-#define RINGBUFFER_H
-
-typedef struct _ringbuffer_l {
-  glong *queue;
-  glong queue_in; 
-  glong queue_out;
-  
-  guint queue_size;
-} RINGBUFFERL;
-
-extern RINGBUFFERL *create_long_ringbuffer(glong queue_elements, glong init_val);
-
-extern int queue_put(RINGBUFFERL *rbuf, glong new_value);
-extern int queue_get(RINGBUFFERL *rbuf, long *old);
-
-#endif
+extern GtkWidget *create_tx_info(TRANSMITTER *tx);
+extern void update_tx_info(TRANSMITTER *tx);

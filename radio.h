@@ -212,6 +212,9 @@ typedef struct _radio {
   GtkWidget *drive_level;
 
   GtkWidget *dialog;
+  
+  GtkWidget *txmeter_info;
+  cairo_surface_t *meter_surface;
 
   GtkWidget *oc_rx_b[BANDS * 8];
   GtkWidget *oc_tx_b[BANDS * 8];  

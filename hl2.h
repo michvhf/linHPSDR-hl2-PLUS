@@ -90,7 +90,7 @@ typedef struct _hermeslite2 {
   gint qos_timer_id;
   gint mrf101data_timer_id;  
 
-  RINGBUFFER *one_shot_queue;
+  RINGBUFFERL *one_shot_queue;
 
   gboolean cl2_enabled;
 

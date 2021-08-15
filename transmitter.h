@@ -20,7 +20,12 @@
 #ifndef TRANSMITTER_H
 #define TRANSMITTER_H
 
+#define NUM_TX_METERS 4 // PA current, PA temp, HL2 temp, PWR out
+#define PEAK_DETECT_BUF_SIZE 40
+
 #include "ringbuffer.h"
+#include "peak_detect.h"
+#include "tx_info_meter.h"
 
 #define CTCSS_FREQUENCIES 38
 extern double ctcss_frequencies[CTCSS_FREQUENCIES];
@@ -45,12 +50,18 @@ typedef struct _transmitter {
   gdouble rev;
   gdouble alc;
   gdouble swr;
+  PEAKDETECTOR *fwd_peak_buf;    
+  gdouble fwd_peak;
+  
 
   GtkWidget *window;
   gint window_width;
   gint window_height;
 
   RECEIVER *rx;
+  
+  TXMETER *tx_info_meter[NUM_TX_METERS+1];
+  GtkWidget *tx_info;
 
   gdouble drive;
   gdouble tune_percent;
@@ -85,12 +96,14 @@ typedef struct _transmitter {
   guint packet_counter;
 
   
-  RINGBUFFER *p1_ringbuf;  
+  RINGBUFFERL *p1_ringbuf;  
+  
+
   
   #ifdef CWDAEMON
   // PC generated cw
   glong cw_waveform_idx;
-  RINGBUFFER *cw_iq_delay_buf;  
+  RINGBUFFERL *cw_iq_delay_buf;  
   gboolean last_key_state;
   #endif
   

@@ -32,6 +32,7 @@
 #include "radio.h"
 #include "vfo.h"
 #include "level_meter.h"
+#include "tx_info.h"
 //#include "transmitter_dialog.h"
 #include "configure_dialog.h"
 #include "main.h"
@@ -44,9 +45,11 @@ static gboolean transmitter_button_press_event_cb(GtkWidget *widget,GdkEventButt
     case 1: // left
       break;
     case 3: // right
-      //if(tx->dialog==NULL) {
-      if(radio->dialog==NULL) {
-        radio->dialog=create_configure_dialog(radio,rx_base+radio->receivers);
+      if(radio->transmitter->tx_info  == NULL) {
+        if ((radio->can_transmit) && (radio->hl2 != NULL)) {
+          // Only tested with HL2 for now  
+          radio->transmitter->tx_info = create_tx_info(radio->transmitter);
+        }
       }
       break;
   }

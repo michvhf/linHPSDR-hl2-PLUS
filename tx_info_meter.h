@@ -16,21 +16,20 @@
 * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 *
 */
+#ifndef TX_INFO_METER_H
+#define TX_INFO_METER_H
 
-#ifndef RINGBUFFER_H
-#define RINGBUFFER_H
-
-typedef struct _ringbuffer_l {
-  glong *queue;
-  glong queue_in; 
-  glong queue_out;
+typedef struct _txmeter {
+  GtkWidget *tx_meter_drawing;
+  cairo_surface_t *tx_info_meter_surface;  
+  char *label;
+  gdouble meter_max;
+  gdouble meter_min;
   
-  guint queue_size;
-} RINGBUFFERL;
+} TXMETER;
 
-extern RINGBUFFERL *create_long_ringbuffer(glong queue_elements, glong init_val);
+extern TXMETER *create_tx_info_meter(void);
+extern void update_tx_info_meter(TXMETER *tx_meter, gdouble value, gdouble peak);
 
-extern int queue_put(RINGBUFFERL *rbuf, glong new_value);
-extern int queue_get(RINGBUFFERL *rbuf, long *old);
-
+extern void configure_meter(TXMETER *meter, char *title, gdouble max_val, gdouble min_val);
 #endif

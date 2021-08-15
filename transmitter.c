@@ -26,6 +26,7 @@
 #include <wdsp.h>
 
 #include "ringbuffer.h"
+#include "peak_detect.h"
 
 #include "alex.h"
 #include "discovered.h"
@@ -33,6 +34,7 @@
 #include "mode.h"
 #include "filter.h"
 #include "receiver.h"
+#include "tx_info_meter.h"
 #include "transmitter.h"
 #include "wideband.h"
 #include "adc.h"
@@ -47,6 +49,7 @@
 #include "mic_level.h"
 #include "property.h"
 #include "ext.h"
+#include "tx_info.h"
 #ifdef SOAPYSDR
 #include "soapy_protocol.h"
 #endif
@@ -777,6 +780,8 @@ static gboolean update_timer_cb(void *data) {
 
   update_mic_level(radio);
 
+  if (tx->tx_info != NULL) update_tx_info(tx);
+
   if(isTransmitting(radio)) {
     tx->alc=GetTXAMeter(tx->channel,tx->alc_meter);
 
@@ -847,6 +852,9 @@ static gboolean update_timer_cb(void *data) {
     v1=((double)fwd_power/4095.0)*constant1;
     tx->fwd=(v1*v1)/constant2;    
     
+    // Peak detection ring buffer
+    tx->fwd_peak = get_peak(tx->fwd_peak_buf, tx->fwd);
+        
     if(radio->discovered->device==DEVICE_HERMES_LITE2) {
       tx->exciter=0.0;
     } else {
@@ -860,6 +868,10 @@ static gboolean update_timer_cb(void *data) {
       v1=((double)rev_power/4095.0)*constant1;
       tx->rev=(v1*v1)/constant2;
     }  
+  }
+  else {
+    // Peak detection ring buffer
+    tx->fwd_peak = get_peak(tx->fwd_peak_buf, 0);    
   }
 
   return TRUE;
@@ -1517,7 +1529,10 @@ g_print("create_transmitter: channel=%d\n",channel);
   tx->alex_forward_power=0;
   tx->alex_reverse_power=0;
   tx->swr = 1.0;
-
+  tx->fwd_peak = 0;
+  tx->fwd = 0;
+  tx->rev = 0;
+  
   tx->eer_amiq=1;
   tx->eer_pgain=0.5;
   tx->eer_mgain=0.5;
@@ -1709,6 +1724,16 @@ g_print("create_transmitter: channel=%d\n",channel);
 
   transmitter_set_mode(tx,mode);
 
+  tx->tx_info = NULL;
+  
+  //tx->tx_info_meter = 0;
+  for (int i = 0; i <= NUM_TX_METERS; i++) {
+    tx->tx_info_meter[i] = NULL;
+  }
+  tx->tx_info_meter[NUM_TX_METERS+1] = NULL;  
+  
+  tx->fwd_peak_buf = create_peak_detector(PEAK_DETECT_BUF_SIZE, 0);
+  
   create_visual(tx);
 
   XCreateAnalyzer(tx->channel, &rc, 262144, 1, 1, "");

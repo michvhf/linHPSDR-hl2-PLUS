@@ -142,6 +142,9 @@ bpsk.c \
 ringbuffer.c \
 hl2.c \
 level_meter.c \
+tx_info.c \
+tx_info_meter.c \
+peak_detect.c \
 subrx.c
 
 HEADERS=\
@@ -199,6 +202,9 @@ bpsk.h \
 ringbuffer.h \
 hl2.h \
 level_meter.h \
+tx_info.h \
+tx_info_meter.h \
+peak_detect.h \
 subrx.h
 
 OBJS=\
@@ -255,6 +261,9 @@ bpsk.o \
 ringbuffer.o \
 hl2.o \
 level_meter.o \
+tx_info.o \
+tx_info_meter.o \
+peak_detect.o \
 subrx.o
 
 

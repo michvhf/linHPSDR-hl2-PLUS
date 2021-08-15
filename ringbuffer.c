@@ -1,5 +1,5 @@
 /* Copyright (C)
-* 2018 - John Melton, G0ORX/N6LYT
+* 2021 - m5evt
 *
 * This program is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@
 #include "ringbuffer.h"
 
 //Put sample on the ring buffer
-int queue_put(RINGBUFFER *rbuf, glong new_value) {
+int queue_put(RINGBUFFERL *rbuf, glong new_value) {
   if(rbuf->queue_in == ((rbuf->queue_out - 1 + rbuf->queue_size) % rbuf->queue_size)) {
     return -1; // Queue Full
   }
@@ -31,7 +31,7 @@ int queue_put(RINGBUFFER *rbuf, glong new_value) {
 }
 
 //Get sample from the ring buffer
-int queue_get(RINGBUFFER *rbuf, long *old) {  
+int queue_get(RINGBUFFERL *rbuf, long *old) {  
   // Queue Empty - nothing to get
   if(rbuf->queue_in == rbuf->queue_out) return -1; 
 
@@ -40,9 +40,9 @@ int queue_get(RINGBUFFER *rbuf, long *old) {
   return 0; // No errors
 }
 
-RINGBUFFER *create_long_ringbuffer(glong queue_elements, glong init_val) {
+RINGBUFFERL *create_long_ringbuffer(glong queue_elements, glong init_val) {
 g_print("create_long_ringbuffer: size %ld \n", queue_elements);
-  RINGBUFFER *rbuf = g_new0(RINGBUFFER, 1);  
+  RINGBUFFERL *rbuf = g_new0(RINGBUFFERL, 1);  
   
   //Initialise the ring buffer  
   rbuf->queue_size = queue_elements + 1;

@@ -17,20 +17,18 @@
 *
 */
 
-#ifndef RINGBUFFER_H
-#define RINGBUFFER_H
+#ifndef PEAKDETECT_H
+#define PEAKDETECT_H
 
-typedef struct _ringbuffer_l {
-  glong *queue;
-  glong queue_in; 
-  glong queue_out;
+typedef struct _peakdetector {
+  gdouble *queue;
+  guint queue_in; 
   
   guint queue_size;
-} RINGBUFFERL;
+} PEAKDETECTOR;
 
-extern RINGBUFFERL *create_long_ringbuffer(glong queue_elements, glong init_val);
-
-extern int queue_put(RINGBUFFERL *rbuf, glong new_value);
-extern int queue_get(RINGBUFFERL *rbuf, long *old);
+extern PEAKDETECTOR *create_peak_detector(guint num_samples, gdouble init_val);
+extern gdouble get_peak(PEAKDETECTOR *rbuf, gdouble new_val);
+void peak_queue_put(PEAKDETECTOR *rbuf, gdouble new_value);
 
 #endif
