@@ -325,12 +325,12 @@ static gboolean wisdom_delete(GtkWidget *widget) {
 
 static int check_wisdom(void *data) {
   char wisdom_directory[1024];
-  char wisdom_file[1024];
+  char wisdom_file[1048];
   GtkWidget *dialog;
   char label[128];
 
   sprintf(wisdom_directory,"%s/.local/share/linhpsdr/",g_get_home_dir());
-  sprintf(wisdom_file,"%swdspWisdom",wisdom_directory);
+  snprintf(wisdom_file, sizeof(wisdom_file), "%swdspWisdom", wisdom_directory);
   if(access(wisdom_file,F_OK)<0) {
 #ifdef __APPLE__
       wisdom_sem=sem_open("wisdomsem",O_CREAT,0700,0);
@@ -391,7 +391,7 @@ gboolean start_cb(GtkWidget *widget,gpointer data) {
   char v[32];
   char mac[32];
   char ip[32];
-  char iface[64];
+  char iface[128];
   char protocol[32];
   gchar title[128];
   char *value;
@@ -426,7 +426,7 @@ gboolean start_cb(GtkWidget *widget,gpointer data) {
         } else {
           strcpy(protocol,"P2");
         }
-        sprintf(iface,"on %s",d->info.network.interface_name);
+        snprintf(iface, sizeof(iface), "on %s", d->info.network.interface_name);
         break;
     }
     g_snprintf((gchar *)&title,sizeof(title),"LinHPSDR (%s): %s %s %s %s %s %s",

@@ -215,8 +215,9 @@ g_print("discover_receive_thread\n");
                               discovered[devices].supported_receivers=buffer[0x13];   
                               int patch = buffer[0x15]&0xFF; 
                               printf("Patch num = %d\n", patch); 
-                              char gateware_patch[2];
-                              sprintf(gateware_patch, "%d", patch);
+                              char gateware_patch[8];
+                              snprintf(gateware_patch, sizeof(gateware_patch),"%d", patch);
+
                               int char_len = strlen(discovered[devices].software_version);
                               discovered[devices].software_version[char_len] = 'p';                              
                               discovered[devices].software_version[char_len+1] = gateware_patch[0];                                
