@@ -320,6 +320,67 @@ void HL2i2cProcessReturnValue(HERMESLITE2 *hl2, unsigned char c0,
   HL2i2cStoreValue(hl2, raddr, rdata); 
 }
 
+// Versaclock CL2 output enable
+void HL2cl2Enable(HERMESLITE2 *hl2) {
+  g_print("HL2: Enable CL2 %ld \n", hl2->clock2_freq);
+  // VCO = 38.4*68 = 2611.2 MHz 
+  double divisor = (2611200000 / (double)hl2->clock2_freq) / 2;
+  g_print("-----Divisor CL2 %lf \n", divisor);  
+  
+  unsigned int addr = ADDR_VERSA5 >> 1;
+  unsigned int div = (unsigned int)(divisor * pow(2, 24) + 0.1);
+  unsigned int intgr = div >> 24;
+  unsigned int frac = (div & 0xFFFFFF) << 2;
+  
+  printf("frac %i\n", frac);
+  // Clock2 CMOS1 output, 3.3V
+  HL2i2cQueueWrite(hl2, I2C1_WRITE, addr, 0x62, 0x3b);  
+  // Disable aux output on clock 1
+  HL2i2cQueueWrite(hl2, I2C1_WRITE, addr, 0x2c, 0x00);   
+  // Use divider for clock2
+  HL2i2cQueueWrite(hl2, I2C1_WRITE, addr, 0x31, 0x81);  
+  
+  // Integer portion
+  HL2i2cQueueWrite(hl2, I2C1_WRITE, addr, 0x3d, intgr >> 4);  
+  HL2i2cQueueWrite(hl2, I2C1_WRITE, addr, 0x3e, ((intgr << 4) & 0xFF));    
+    
+  // Fractional portion
+  // [29:22]
+  HL2i2cQueueWrite(hl2, I2C1_WRITE, addr, 0x32, frac >> 24);    
+  // [21:14]
+  HL2i2cQueueWrite(hl2, I2C1_WRITE, addr, 0x33, frac >> 16);    
+  // [13:6]
+  HL2i2cQueueWrite(hl2, I2C1_WRITE, addr, 0x34, frac >> 8);    
+  // [5:0] and disable ss
+  HL2i2cQueueWrite(hl2, I2C1_WRITE, addr, 0x35, (frac & 0xFF)<<2);    
+  
+  //self.WriteVersa5(0x63,0x01)		# Enable clock2
+  HL2i2cQueueWrite(hl2, I2C1_WRITE, addr, 0x63, 0x01);    
+}
+
+void HL2cl2Disable(HERMESLITE2 *hl2) {
+  g_print("-----HL2: Disable CL2\n"); 
+  
+  int addr = ADDR_VERSA5 >> 1;
+  // Disable divider output for clock2
+  HL2i2cQueueWrite(hl2, I2C1_WRITE, addr, 0x31, 0x80);   
+  // Disable clock2 output      
+  HL2i2cQueueWrite(hl2, I2C1_WRITE, addr, 0x63, 0x00);     
+}
+
+void HL2clock2Status(HERMESLITE2 *hl2, gboolean xvtr_on, const long int *clock_freq) {
+
+  if ((xvtr_on) && (hl2->cl2_enabled == FALSE)) { 
+    hl2->clock2_freq = *clock_freq;
+    HL2cl2Enable(hl2);
+    hl2->cl2_enabled = TRUE;
+  }
+  else if ((xvtr_on == FALSE) && (hl2->cl2_enabled == TRUE)) {
+    HL2cl2Disable(hl2);
+    hl2->cl2_enabled = FALSE;
+  }
+}
+
 HERMESLITE2 *create_hl2(void) {
   HERMESLITE2 *hl2=g_new0(HERMESLITE2,1);
   
@@ -331,6 +392,7 @@ HERMESLITE2 *create_hl2(void) {
   hl2->mrf101_bias_enable = FALSE;
   hl2->mrf101_bias_value = 0;
   
+  hl2->clock2_freq = 1;
   
   hl2->adc2_value_to_send = FALSE;
   hl2->adc2_lna_gain = 20;

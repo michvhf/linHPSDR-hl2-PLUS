@@ -40,6 +40,8 @@
 #define ADDR_MCP4662 0x2c
 // HL2-MRF101 ADC for pa current and temperature
 #define ADDR_MAX11645 0x36
+// Versaclock 5, main HL2 clock generator/distribution
+#define ADDR_VERSA5 0xD4
 
 
 #define MCP4662_BIAS0 0x02
@@ -114,6 +116,8 @@ extern int HL2i2cReadWrite(HERMESLITE2 *hl2);
 extern unsigned int HL2i2cSendTargetAddr(HERMESLITE2 *hl2);
 extern unsigned int HL2i2cSendCommand(HERMESLITE2 *hl2);
 extern int HL2i2cSendValue(HERMESLITE2 *hl2);
+
+extern void HL2clock2Status(HERMESLITE2 *hl2, gboolean xvtr_on, const long int *clock_freq);
 
 extern void HL2i2cProcessReturnValue(HERMESLITE2 *hl2, unsigned char c0,
                                      unsigned char c1, unsigned char c2, unsigned char c3, unsigned char c4);
