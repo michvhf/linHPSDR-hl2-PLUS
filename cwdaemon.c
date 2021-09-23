@@ -778,6 +778,7 @@ int cwdaemon_receive(void)
 void cwdaemon_handle_escaped_request(char *request)
 {
 	/* Take action depending on Escape code. */
+  printf("Code %i\n", (int) request[1]);
 	switch ((int) request[1]) {
 	case '0':
 		/* Reset all values. */
@@ -831,7 +832,7 @@ void cwdaemon_handle_escaped_request(char *request)
 			printf("requested aborting of message - executing (character mode is active)");
 			if (ptt_flag & PTT_ACTIVE_ECHO) {
 				printf("echo \"break\"");
-				cwdaemon_sendto("break\r\n");
+				//cwdaemon_sendto("break\r\n");
 			}
 			request_queue[0] = '\0';
 			cw_flush_tone_queue();
@@ -887,6 +888,7 @@ void cwdaemon_handle_escaped_request(char *request)
 		break;
 	case 'c':
 		{
+      printf("Why am I tuning?");
 			/* FIXME: change this uint32_t to size_t. */
 			uint32_t seconds = 0;
 			/* Tune for a number of seconds. */
@@ -960,7 +962,7 @@ void cwdaemon_handle_escaped_request(char *request)
 		   the client didn't specify reply text, the 'h' will
 		   be the only content of server's reply. */
 
-		cwdaemon_prepare_reply(reply_buffer, request + 1, strlen(request + 1));
+		//cwdaemon_prepare_reply(reply_buffer, request + 1, strlen(request + 1));
 		printf("reply is ready, waiting for message from client (reply: \"%s\")", reply_buffer);
 		/* cwdaemon will wait for queue-empty callback before
 		   sending the reply. */

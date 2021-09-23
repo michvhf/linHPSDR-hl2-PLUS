@@ -73,7 +73,7 @@ void set_cwvox(RADIO *r, gboolean cw_key_state) {
   r->hang_time_ctr = 0;
   if (cw_key_state == 1) {
     if(!r->mox) {
-      MOX *m=g_new0(MOX,1);
+      MOX_STATE *m=g_new0(MOX_STATE,1);
       m->radio=r;
       m->state=1;
       g_idle_add(ext_set_mox,(gpointer)m);      
@@ -88,7 +88,7 @@ void update_cwvox(RADIO *r) {
   r->hang_time_ctr += r->protocol1_timer;
         
   if (r->hang_time_ctr > (double)r->cw_keyer_hang_time) {    
-    MOX *m=g_new0(MOX,1);
+    MOX_STATE *m=g_new0(MOX_STATE,1);
     m->radio=r;
     m->state=0;
     g_idle_add(ext_set_mox,(gpointer)m); 

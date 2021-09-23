@@ -31,12 +31,15 @@
 #include "signal.h"
 #include "vfo.h"
 #include "transmitter.h"
+#include "ext.h"
 
 #include "midi.h"
 #ifdef CWDAEMON
 #include "cwdaemon.h"
 #include <libcw.h>
 #endif
+#include "receiver_dialog.h"
+#include "configure_dialog.h"
 
 int midi_rx;
 int midi_debug=FALSE;
@@ -180,6 +183,167 @@ static int midi_action(void *data) {
               vfo_b2a(rx);
             }
 	    break;
+	/////////////////////////////////////////////////////////// "NUMBER PAD"
+	case NUMPAD_0:
+	    g_idle_add(ext_num_pad,GINT_TO_POINTER(0));
+	    break;
+	case NUMPAD_1:
+	    g_idle_add(ext_num_pad,GINT_TO_POINTER(1));
+	    break;
+	case NUMPAD_2:
+	    g_idle_add(ext_num_pad,GINT_TO_POINTER(2));
+	    break;
+	case NUMPAD_3:
+	    g_idle_add(ext_num_pad,GINT_TO_POINTER(3));
+	    break;
+	case NUMPAD_4:
+	    g_idle_add(ext_num_pad,GINT_TO_POINTER(4));
+	    break;
+	case NUMPAD_5:
+	    g_idle_add(ext_num_pad,GINT_TO_POINTER(5));
+	    break;
+	case NUMPAD_6:
+	    g_idle_add(ext_num_pad,GINT_TO_POINTER(6));
+	    break;
+	case NUMPAD_7:
+	    g_idle_add(ext_num_pad,GINT_TO_POINTER(7));
+	    break;
+	case NUMPAD_8:
+	    g_idle_add(ext_num_pad,GINT_TO_POINTER(8));
+	    break;
+	case NUMPAD_9:
+	    g_idle_add(ext_num_pad,GINT_TO_POINTER(9));
+	    break;
+	case NUMPAD_CL:
+	    g_idle_add(ext_num_pad,GINT_TO_POINTER(-1));
+	    break;
+	case NUMPAD_ENTER:
+	    g_idle_add(ext_num_pad,GINT_TO_POINTER(-2));
+	    break;
+
+	/////////////////////////////////////////////////////////// "MIDIBAND"
+        /////////////////////////////////////////////////////////// "BANDUP"
+        case MIDI_BAND_10:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band10));
+            }
+            break;
+        case MIDI_BAND_12:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band12));
+            }
+            break;
+#ifdef SOAPYSDR
+        case MIDI_BAND_1240:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band1240));
+            }
+            break;
+        case MIDI_BAND_144:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band144));
+            }
+            break;
+#endif
+        case MIDI_BAND_15:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band15));
+            }
+            break;
+        case MIDI_BAND_160:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band160));
+            }
+            break;
+        case MIDI_BAND_17:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band17));
+            }
+            break;
+        case MIDI_BAND_20:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band20));
+            }
+            break;
+#ifdef SOAPYSDR
+        case MIDI_BAND_220:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band220));
+            }
+            break;
+        case MIDI_BAND_2300:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band2300));
+            }
+            break;
+#endif
+        case MIDI_BAND_30:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band30));
+            }
+            break;
+#ifdef SOAPYSDR
+        case MIDI_BAND_3400:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band3400));
+            }
+            break;
+        case MIDI_BAND_70:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band70));
+            }
+            break;
+#endif
+        case MIDI_BAND_40:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band40));
+            }
+            break;
+#ifdef SOAPYSDR
+        case MIDI_BAND_430:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band430));
+            }
+            break;
+#endif
+        case MIDI_BAND_6:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band6));
+            }
+            break;
+        case MIDI_BAND_60:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band60));
+            }
+            break;
+        case MIDI_BAND_80:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band80));
+            }
+            break;
+#ifdef SOAPYSDR
+        case MIDI_BAND_902:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(band902));
+            }
+            break;
+        case MIDI_BAND_AIR:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(bandAIR));
+            }
+            break;
+#endif
+        case MIDI_BAND_GEN:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(bandGen));
+            }
+            break;
+        case MIDI_BAND_WWV:
+            if (type == MIDI_KEY) {
+              g_idle_add(ext_band_select, GINT_TO_POINTER(bandWWV));
+            }
+            break;
+
 	/////////////////////////////////////////////////////////// "BANDDOWN"
 	/////////////////////////////////////////////////////////// "BANDUP"
         case BAND_DOWN:
@@ -218,6 +382,87 @@ static int midi_action(void *data) {
 		break;
 	    }
 	    break;
+	/////////////////////////////////////////////////////////// "MENUS"
+	case MENU_ABOUT:
+	  break;
+	case MENU_EER:
+	  if(radio->dialog==NULL) {
+            radio->dialog=create_configure_dialog(radio,rx_base+radio->receivers+3);
+          } else {
+	    configure_dialog_set_tab(rx_base+radio->receivers+3);
+	  }
+	  break;
+	case MENU_MIDI:
+	  if(radio->dialog==NULL) {
+            radio->dialog=create_configure_dialog(radio,rx_base+radio->receivers+4);
+          } else {
+	    configure_dialog_set_tab(rx_base+radio->receivers+4);
+          }
+	  break;
+	case MENU_OC:
+	  if(radio->dialog==NULL) {
+            radio->dialog=create_configure_dialog(radio,1);
+          } else {
+	    configure_dialog_set_tab(1);
+          }
+	  break;
+	case MENU_PA:
+	  if(radio->dialog==NULL) {
+            radio->dialog=create_configure_dialog(radio,rx_base+radio->receivers+2);
+          } else {
+	    configure_dialog_set_tab(rx_base+radio->receivers+2);
+          }
+	  break;
+	case MENU_PS:
+	  if(radio->dialog==NULL) {
+            radio->dialog=create_configure_dialog(radio,rx_base+radio->receivers+1);
+          } else {
+	    configure_dialog_set_tab(rx_base+radio->receivers+1);
+          }
+	  break;
+	case MENU_RADIO:
+	  if(radio->dialog==NULL) {
+            radio->dialog=create_configure_dialog(radio,0);
+          } else {
+	    configure_dialog_set_tab(0);
+          }
+	  break;
+	case MENU_RX:
+	  if(radio->dialog==NULL) {
+            int i;
+            for(i=0;i<radio->discovered->supported_receivers;i++) {
+              if(rx==radio->receiver[i]) {
+                break;
+              }
+            }
+            radio->dialog=create_configure_dialog(radio,rx_base+i);
+            update_receiver_dialog(rx);
+          } else {
+	    int i;
+            for(i=0;i<radio->discovered->supported_receivers;i++) {
+              if(rx==radio->receiver[i]) {
+                break;
+              }
+            }
+	    configure_dialog_set_tab(rx_base+i);
+            update_receiver_dialog(rx);
+          }
+	  break;
+	case MENU_TX:
+	  if(radio->dialog==NULL) {
+            radio->dialog=create_configure_dialog(radio,rx_base+radio->receivers);
+          } else {
+	    configure_dialog_set_tab(rx_base+radio->receivers);
+          }
+	  break;
+	case MENU_XVTR:
+	  if(radio->dialog==NULL) {
+            radio->dialog=create_configure_dialog(radio,2);
+          } else {
+	    configure_dialog_set_tab(2);
+          }
+	  break;
+
 /*
 	/////////////////////////////////////////////////////////// "COMPRESS"
 	case COMPRESS: // wheel or knob
@@ -257,17 +502,16 @@ static int midi_action(void *data) {
               receiver_move(rx,(long long)(rx->step*val),TRUE);
             }
 	    break;
-/*
 	/////////////////////////////////////////////////////////// "CWL"
 	/////////////////////////////////////////////////////////// "CWR"
-	case CWL: // only key
-	case CWR: // only key
-#ifdef LOCALCW
+	case CWLEFT: // only key
+	case CWRIGHT: // only key
+//#ifdef LOCALCW
 	    if (type == MIDI_KEY) {
 		new=(action == CWL);
-		keyer_event(new,val);
+		//keyer_event(new,val);
 	    }
-#endif
+//#endif
 	    break;
 	/////////////////////////////////////////////////////////// "CWSPEED"
 	case CWSPEED: // knob or wheel
@@ -278,22 +522,23 @@ static int midi_action(void *data) {
                 break;
               case MIDI_WHEEL:
 		// here we allow from 1 to 60 wpm
-                new = cw_keyer_speed + val;
+                new = radio->cw_keyer_speed + val;
 		if (new <  1) new=1;
 		if (new > 60) new=60;
                 break;
               default:
                 // do not change
                 // we should not come here anyway
-                new = cw_keyer_speed;
+                new = radio->cw_keyer_speed;
                 break;
             }
-	    cw_keyer_speed=new;
-#ifdef LOCALCW
-	    keyer_update();
-#endif
+	    radio->cw_keyer_speed=new;
+//#ifdef LOCALCW
+	    //keyer_update();
+//#endif
             g_idle_add(ext_vfo_update, NULL);
 	    break;
+/*
 	/////////////////////////////////////////////////////////// "DIVCOARSEGAIN"
 	case DIV_COARSEGAIN:  // knob or wheel supported
 	case DIV_FINEGAIN:    // knob or wheel supported
@@ -426,22 +671,22 @@ static int midi_action(void *data) {
 	case MIC_VOLUME: // knob or wheel supported
 	    // TODO: possibly adjust linein value if that is effective
 	    if(radio->transmitter) {
-		    switch (type) {
-		      case MIDI_KNOB:
-			dnew=-10.0 + 0.6*val;
-			break;
-		      case MIDI_WHEEL:
-			dnew = radio->transmitter->mic_gain + val;
-			if (dnew < -10.0) dnew=-10.0; if (dnew > 50.0) dnew=50.0;
-			break;
-		      default:
-			// do not change mic gain
-			// we should not come here anyway
-			dnew = radio->transmitter->mic_gain;
-			break;
-		    }
-		    radio->transmitter->mic_gain=dnew;
-		    update_radio(radio);
+	      switch (type) {
+  	        case MIDI_KNOB:
+  	  	  dnew=-10.0 + 0.6*val;
+  		  break;
+  	        case MIDI_WHEEL:
+  		  dnew = radio->transmitter->mic_gain + val;
+  		  if (dnew < -10.0) dnew=-10.0; if (dnew > 50.0) dnew=50.0;
+  		  break;
+  	        default:
+  		  // do not change mic gain
+  		  // we should not come here anyway
+  		  dnew = radio->transmitter->mic_gain;
+  		  break;
+	      }
+	      radio->transmitter->mic_gain=dnew;
+	      update_radio(radio);
 	    }
 	    break;
 	/////////////////////////////////////////////////////////// "MODEDOWN"
@@ -548,7 +793,7 @@ static int midi_action(void *data) {
 	case PAN_HIGH:  // wheel or knob
 	    switch (type) {
 	      case MIDI_WHEEL:
-		if (radio->can_transmit && !isTransmitting(radio)) {
+		if (radio->can_transmit && isTransmitting(radio)) {
 		    // TX panadapter affected
 		    radio->transmitter->panadapter_high += val;
 		} else {
@@ -558,7 +803,7 @@ static int midi_action(void *data) {
 	    case MIDI_KNOB:
 		// Adjust "high water" in the range -50 ... 0 dBm
 		new = -50 + val/2;
-		if (radio->can_transmit && !isTransmitting(radio)) {
+		if (radio->can_transmit && isTransmitting(radio)) {
 		    radio->transmitter->panadapter_high += val;
 		} else {
 		    rx->panadapter_high = new;
@@ -574,7 +819,7 @@ static int midi_action(void *data) {
 	case PAN_LOW:  // wheel and knob
 	    switch (type) {
 	      case MIDI_WHEEL:
-		if (radio->can_transmit && !isTransmitting(radio)) {
+		if (radio->can_transmit && isTransmitting(radio)) {
 		    // TX panadapter affected
 		    radio->transmitter->panadapter_low += val;
 		} else {
@@ -582,7 +827,7 @@ static int midi_action(void *data) {
 		}
 		break;
 	      case MIDI_KNOB:
-		if (radio->can_transmit && !isTransmitting(radio)) {
+		if (radio->can_transmit && isTransmitting(radio)) {
 		    // TX panadapter: use values -100 through -50
 		    new = -100 + val/2;
 		    radio->transmitter->panadapter_low =new;
@@ -764,6 +1009,7 @@ static int midi_action(void *data) {
 		update_vfo(rx);
 		rx=radio->receiver[midi_rx];
 		update_vfo(rx);
+		gtk_window_present(GTK_WINDOW(radio->receiver[midi_rx]->window));
 	    }
 	    break;    
 	/////////////////////////////////////////////////////////// "SWAPVFO"
@@ -783,12 +1029,13 @@ static int midi_action(void *data) {
 	/////////////////////////////////////////////////////////// "VFOB"
 	case VFOA: // only wheel supported
 	    if (type == MIDI_WHEEL && !rx->locked) {
+              g_print("%s: VFOA: val=%d\n",__FUNCTION__,val);
               receiver_move(rx,(long long)(rx->step*val),TRUE);
 	    }
 	    break;
 	case VFOB: // only wheel supported
 	    if (type == MIDI_WHEEL && !rx->locked) {
-              receiver_move_b(rx,(long long)(rx->step*val),FALSE,TRUE);
+              receiver_move_b(rx,(long long)(rx->step*-val),FALSE,TRUE);
 	    }
 	    break;
 	/////////////////////////////////////////////////////////// "VFOSTEPDOWN"
@@ -889,10 +1136,11 @@ static int midi_action(void *data) {
         case MIDI_ZOOM:  // wheel and knob
             switch (type) {
               case MIDI_WHEEL:
-                if(val>=1 && val<=8) {
-		  receiver_change_zoom(rx,val);
-		  update_vfo(rx);
+		new=rx->zoom+val;
+		if(new>=1 && new<=8) {
+		  receiver_change_zoom(rx,new);
 		}
+		update_vfo(rx);
                 break;
               case MIDI_KNOB:
                 if(val>=1 && val<=8) {

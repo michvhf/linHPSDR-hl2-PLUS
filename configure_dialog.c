@@ -50,17 +50,21 @@
 #include "about_dialog.h"
 #include "wideband_dialog.h"
 #ifdef MIDI
+#include "midi.h"
 #include "midi_dialog.h"
 #endif
 #include "diversity_dialog.h"
 
 int rx_base=3; // number of tabs before receivers
 
+static GtkWidget *notebook;
+
 static gboolean delete_event(GtkWidget *widget, GdkEvent *event, gpointer data) {
   RADIO *radio=(RADIO *)data;
   int i;
 
   save_xvtr();
+  configure_midi_device(false);
   radio->dialog=NULL;
   for(i=0;i<radio->discovered->supported_receivers;i++) {
     if(radio->receiver[i]!=NULL) {
@@ -109,7 +113,7 @@ GtkWidget *create_configure_dialog(RADIO *radio,int tab) {
 
   GtkWidget *content=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 
-  GtkWidget *notebook=gtk_notebook_new();
+  notebook=gtk_notebook_new();
 
   gtk_notebook_append_page(GTK_NOTEBOOK(notebook),create_radio_dialog(radio),gtk_label_new("Radio"));
   gtk_notebook_append_page(GTK_NOTEBOOK(notebook),create_oc_dialog(radio),gtk_label_new("OC"));
@@ -153,4 +157,9 @@ GtkWidget *create_configure_dialog(RADIO *radio,int tab) {
   g_signal_connect (notebook,"switch-page",G_CALLBACK(switch_page_event),(gpointer)radio);
 
   return dialog;
+
+}
+
+void configure_dialog_set_tab(int tab) {
+  gtk_notebook_set_current_page(GTK_NOTEBOOK(notebook),tab);
 }

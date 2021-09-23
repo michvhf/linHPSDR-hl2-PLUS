@@ -803,6 +803,7 @@ void receiver_move_b(RECEIVER *rx,long long hz,gboolean b_only,gboolean round) {
         } else {
           rx->frequency_b=rx->frequency_b+hz;
         }
+        update_frequency(rx);
         break;
       case SPLIT_ON:
         if(round) {
@@ -810,6 +811,7 @@ void receiver_move_b(RECEIVER *rx,long long hz,gboolean b_only,gboolean round) {
         } else {
           rx->frequency_b=rx->frequency_b+hz;
         }
+        update_frequency(rx);
         break;
       case SPLIT_SAT:
         if(round) {
@@ -827,8 +829,8 @@ void receiver_move_b(RECEIVER *rx,long long hz,gboolean b_only,gboolean round) {
         if(!b_only) {
           receiver_move_a(rx,hz,round);
           frequency_changed(rx);
-          update_frequency(rx);
         }
+        update_frequency(rx);
         break;
       case SPLIT_RSAT:
         if(round) {
