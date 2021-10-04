@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=0.6-beta
+Type=Application
+Terminal=false
+Name[eb_GB]=linHPSDR
+Exec=linhpsdr-hl2-PLUS
+Icon=/usr/share/linhpsdr-hl2-PLUS/hpsdr_icon.png
+Name=linHPSDR
+

@@ -1,0 +1,7 @@
+Package: linhpsdr-hl2-PLUS
+Version: 0.6-beta
+Maintainer: Vince Vielhaber K8ZW
+Architecture: all
+Description: HPSDR Radio for Linux updated for HL2+
+Depends: libfftw3-3 (>= 3.3.6), libpulse0 (>= 0.20.1)
+
