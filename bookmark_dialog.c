@@ -43,6 +43,10 @@
 #include "property.h"
 
 static GtkWidget *name_text;
+static GtkWidget *mode_text;
+static GtkWidget *mode_menu;
+static GtkWidget *mode_menu_combo_box;
+static GtkWidget *menu_item;
 
 static BOOKMARK *bookmark_head=NULL;
 static BOOKMARK *bookmark_tail=NULL;
@@ -185,7 +189,10 @@ static gboolean update_cb(GtkWidget *widget,gpointer data) {
 
   g_free(info->bookmark->name);
   info->bookmark->name=g_new0(gchar,strlen(gtk_entry_get_text(GTK_ENTRY(name_text)))+1);
+
   strcpy(info->bookmark->name,gtk_entry_get_text(GTK_ENTRY(name_text)));
+  info->bookmark->mode = gtk_combo_box_get_active(GTK_COMBO_BOX(mode_menu_combo_box));
+
 
   gtk_widget_destroy(info->rx->bookmark_dialog);
   info->rx->bookmark_dialog=NULL;
@@ -427,6 +434,7 @@ static gint compare_func(GtkTreeModel *model,GtkTreeIter *a,GtkTreeIter *b,gpoin
 GtkWidget *create_bookmark_dialog(RECEIVER *rx,gint function,BOOKMARK *bookmark) {
   int x;
   int y;
+  int i;
   gchar temp[128];
 
   if(bookmark_head==NULL) {
@@ -467,7 +475,7 @@ GtkWidget *create_bookmark_dialog(RECEIVER *rx,gint function,BOOKMARK *bookmark)
       gtk_grid_attach(GTK_GRID(grid),mode_title,x,y,1,1);
       x++;
       g_snprintf((gchar *)&temp,sizeof(temp),"%s",mode_string[rx->mode_a]);
-      GtkWidget *mode_text=gtk_label_new(temp);
+      mode_text=gtk_label_new(temp);
       gtk_grid_attach(GTK_GRID(grid),mode_text,x,y,1,1);
       y++;
       x=0;
@@ -531,6 +539,7 @@ GtkWidget *create_bookmark_dialog(RECEIVER *rx,gint function,BOOKMARK *bookmark)
       g_signal_connect(view,"row-activated", G_CALLBACK(tree_selection_activated_cb), rx);
       g_signal_connect(view,"button-press-event", G_CALLBACK(button_pressed_cb), rx);
       break;
+
     case EDIT_BOOKMARK:
       g_snprintf((gchar *)&temp,sizeof(temp),"Linux HPSDR: Bookmark");
       gtk_window_set_title(GTK_WINDOW(dialog),temp);
@@ -556,9 +565,15 @@ GtkWidget *create_bookmark_dialog(RECEIVER *rx,gint function,BOOKMARK *bookmark)
       mode_title=gtk_label_new("Mode: ");
       gtk_grid_attach(GTK_GRID(grid),mode_title,x,y,1,1);
       x++;
-      g_snprintf((gchar *)&temp,sizeof(temp),"%s",mode_string[bookmark->mode]);
-      mode_text=gtk_label_new(temp);
-      gtk_grid_attach(GTK_GRID(grid),mode_text,x,y,1,1);
+      
+      mode_menu_combo_box = gtk_combo_box_text_new();
+      for(i=0;i<MODES;i++) {
+          gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT (mode_menu_combo_box), NULL, mode_string[i]);
+      }
+      gtk_combo_box_set_active(GTK_COMBO_BOX(mode_menu_combo_box),bookmark->mode);
+      gtk_grid_attach(GTK_GRID(grid),mode_menu_combo_box,x,y,1,1);
+
+
       y++;
       x=0;
       filter_title=gtk_label_new("Filter: ");

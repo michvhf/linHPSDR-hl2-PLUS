@@ -1,6 +1,3 @@
-# find what system we are running on
-UNAME_S := $(shell uname -s)
-
 # Get git commit version and date
 #GIT_VERSION := $(shell git --no-pager describe --tags --always --dirty)
 GIT_DATE := $(firstword $(shell git --no-pager show --date=short --format="%ai" --name-only))
@@ -16,16 +13,7 @@ GTKLIBS=`pkg-config --libs gtk+-3.0`
 #OPENGL_INCLUDES=`pkg-config --cflags epoxy`
 #OPENGL_LIBS=`pkg-config --libs epoxy`
 
-ifeq ($(UNAME_S), Linux)
 AUDIO_LIBS=-lasound -lpulse-simple -lpulse -lpulse-mainloop-glib -lsoundio
-AUDIO_SOURCES=audio.c
-AUDIO_HEADRERS=audio.h
-endif
-ifeq ($(UNAME_S), Darwin)
-AUDIO_LIBS=-lsoundio
-AUDIO_SOURCES=portaudio.c
-AUDIO_HEADRERS=portaudio.h
-endif
 
 # uncomment the line below to include SoapySDR support
 #
@@ -54,7 +42,6 @@ soapy_discovery.o \
 soapy_protocol.o
 endif
 
-ifeq ($(UNAME_S), Linux)
 # cwdaemon support. Allows linux based logging software to key an Hermes/HermesLite2
 # needs :
 #			https://github.com/m5evt/unixcw-3.5.1.git
@@ -71,49 +58,37 @@ cwdaemon.h
 CWDAEMON_OBJS= \
 cwdaemon.o
 endif
-endif
 
 # MIDI code from piHPSDR written by Christoph van Wullen, DL1YCF.
 MIDI_INCLUDE=MIDI
 
 ifeq ($(MIDI_INCLUDE),MIDI)
 MIDI_OPTIONS=-D MIDI
-MIDI_HEADERS= midi.h midi_dialog.h
-ifeq ($(UNAME_S), Darwin)
-MIDI_SOURCES= mac_midi.c midi2.c midi3.c midi_dialog.c
-MIDI_OBJS= mac_midi.o midi2.o midi3.o midi_dialog.o
-MIDI_LIBS= -framework CoreMIDI -framework Foundation
-endif
-ifeq ($(UNAME_S), Linux)
 MIDI_SOURCES= alsa_midi.c midi2.c midi3.c midi_dialog.c
+MIDI_HEADERS= midi.h midi_dialog.h
 MIDI_OBJS= alsa_midi.o midi2.o midi3.o midi_dialog.o
 MIDI_LIBS= -lasound
 endif
-endif
 
 CFLAGS=	-g -Wno-deprecated-declarations -O3
+
+#remove -DTEMP_IN_F for temperature display in C in the transmit panadapter
 OPTIONS=  $(MIDI_OPTIONS) $(AUDIO_OPTIONS)  $(SOAPYSDR_OPTIONS) \
          $(CWDAEMON_OPTIONS)  $(OPENGL_OPTIONS) \
           -D USE_VFO_B_MODE_AND_FILTER="USE_VFO_B_MODE_AND_FILTER" \
-         -D GIT_DATE='"$(GIT_DATE)"' -D GIT_VERSION='"$(GIT_VERSION)"'
+         -D GIT_DATE='"$(GIT_DATE)"' -D GIT_VERSION='"$(GIT_VERSION)"' -DTEMP_IN_F
 #OPTIONS=-g -Wno-deprecated-declarations $(AUDIO_OPTIONS) -D GIT_DATE='"$(GIT_DATE)"' -D GIT_VERSION='"$(GIT_VERSION)"' -O3 -D FT8_MARKER
 
-
-ifeq ($(UNAME_S), Linux)
 LIBS=-lrt -lm -lpthread -lwdsp $(GTKLIBS) $(AUDIO_LIBS) $(SOAPYSDR_LIBS) $(CWDAEMON_LIBS) $(OPENGL_LIBS) $(MIDI_LIBS)
-endif
-ifeq ($(UNAME_S), Darwin)
-LIBS=-lm -lpthread -lwdsp $(GTKLIBS) $(AUDIO_LIBS) $(SOAPYSDR_LIBS) $(MIDI_LIBS) 
-endif
 
-INCLUDES=$(GTKINCLUDES) $(PULSEINCLUDES) $(OPGL_INCLUDES)
+INCLUDES=$(GTKINCLUDES) $(OPGL_INCLUDES)
 
 COMPILE=$(CC) $(CFLAGS) $(OPTIONS) $(INCLUDES)
 
 .c.o:
 	$(COMPILE) -c -o $@ $<
 
-PROGRAM=linhpsdr
+PROGRAM=linhpsdr-hl2-PLUS
 
 SOURCES=\
 main.c\
@@ -172,8 +147,7 @@ level_meter.c \
 tx_info.c \
 tx_info_meter.c \
 peak_detect.c \
-subrx.c \
-actions.c
+subrx.c
 
 HEADERS=\
 main.h\
@@ -233,8 +207,7 @@ level_meter.h \
 tx_info.h \
 tx_info_meter.h \
 peak_detect.h \
-subrx.h \
-actions.h
+subrx.h
 
 OBJS=\
 main.o\
@@ -293,8 +266,7 @@ level_meter.o \
 tx_info.o \
 tx_info_meter.o \
 peak_detect.o \
-subrx.o \
-actions.o
+subrx.o
 
 
 $(PROGRAM):  $(OBJS) $(SOAPYSDR_OBJS) $(CWDAEMON_OBJS) $(MIDI_OBJS)
@@ -314,18 +286,23 @@ clean:
 
 install: $(PROGRAM)
 	cp $(PROGRAM) /usr/local/bin
-	if [ ! -d /usr/share/linhpsdr ]; then mkdir /usr/share/linhpsdr; fi
-	cp hpsdr.png /usr/share/linhpsdr
-	cp hpsdr_icon.png /usr/share/linhpsdr
-	cp hpsdr_small.png /usr/share/linhpsdr
-	cp linhpsdr.desktop /usr/share/applications
+	if [ ! -d /usr/share/linhpsdr-hl2-PLUS ]; then mkdir /usr/share/linhpsdr-hl2-PLUS; fi
+	cp hpsdr.png /usr/share/linhpsdr-hl2-PLUS
+	cp hpsdr_icon.png /usr/share/linhpsdr-hl2-PLUS
+	cp hpsdr_small.png /usr/share/linhpsdr-hl2-PLUS
+	cp linhpsdr-hl2-PLUS.desktop /usr/share/applications
 
 debian:
-	cp $(PROGRAM) pkg/linhpsdr/usr/local/bin
-	cp /usr/local/lib/libwdsp.so pkg/linhpsdr/usr/local/lib
-	cp hpsdr.png pkg/linhpsdr/usr/share/linhpsdr
-	cp hpsdr_icon.png pkg/linhpsdr/usr/share/linhpsdr
-	cp hpsdr_small.png pkg/linhpsdr/usr/share/linhpsdr
-	cp linhpsdr.desktop pkg/linhpsdr/usr/share/applications
-	cd pkg; dpkg-deb --build linhpsdr
+	mkdir -p pkg/linhpsdr-hl2-PLUS/usr/local/bin
+	mkdir -p pkg/linhpsdr-hl2-PLUS/usr/local/lib
+	mkdir -p pkg/linhpsdr-hl2-PLUS/usr/share/linhpsdr-hl2-PLUS
+	mkdir -p pkg/linhpsdr-hl2-PLUS/usr/share/applications
+	chmod -R 0755 pkg/linhpsdr-hl2-PLUS
+	cp $(PROGRAM) pkg/linhpsdr-hl2-PLUS/usr/local/bin
+	cp /usr/local/lib/libwdsp.so pkg/linhpsdr-hl2-PLUS/usr/local/lib
+	cp hpsdr.png pkg/linhpsdr-hl2-PLUS/usr/share/linhpsdr-hl2-PLUS
+	cp hpsdr_icon.png pkg/linhpsdr-hl2-PLUS/usr/share/linhpsdr-hl2-PLUS
+	cp hpsdr_small.png pkg/linhpsdr-hl2-PLUS/usr/share/linhpsdr-hl2-PLUS
+	cp linhpsdr-hl2-PLUS.desktop pkg/linhpsdr-hl2-PLUS/usr/share/applications
+	cd pkg; dpkg-deb --build linhpsdr-hl2-PLUS
 

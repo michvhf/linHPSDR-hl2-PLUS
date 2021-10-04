@@ -900,7 +900,8 @@ static void process_ozy_input_buffer(char  *buffer) {
               }
               break;
             case 2:
-              if(radio->discovered->device==DEVICE_HERMES)  {
+              if(radio->discovered->device==DEVICE_HERMES ||
+                 radio->discovered->device==DEVICE_HERMES_LITE_2PLUS)  {
                 left_sample_double_rx=left_sample_double;
                 right_sample_double_rx=right_sample_double;
               }
@@ -1435,6 +1436,10 @@ void ozy_send_buffer() {
             output_buffer[C2]|=0x10;
         }
         
+        if(((radio->filter_board==APOLLO) || (radio->discovered->device==DEVICE_HERMES_LITE_2PLUS)) && radio->tune) {
+            output_buffer[C2]|=0x10;
+        }
+        
         output_buffer[C3]=0x00;
         if(radio->transmitter->rx->band_a==band6) {
           output_buffer[C3]=output_buffer[C3]|0x40; // Alex 6M low noise amplifier
@@ -1531,6 +1536,11 @@ void ozy_send_buffer() {
           output_buffer[C4]=0x40;
           // HL2 extends into [5:0] of this buffer          
           output_buffer[C4]|=(((int)radio->adc[0].attenuation + 12)&0x3F);
+        } else if(radio->discovered->device==DEVICE_HERMES_LITE_2PLUS) {
+          // HL2 full AD9866 gain range -12 dB (0) to 48 dB (60)
+          output_buffer[C4]=0x40;
+          // HL2 extends into [5:0] of this buffer          
+          output_buffer[C4]|=(((int)radio->adc[0].attenuation + 12)&0x3F);
         } else if(radio->discovered->device==DEVICE_HERMES_LITE) {
           if(!radio->adc[0].enable_step_attenuation) {
             output_buffer[C4]=0x20;
@@ -1604,7 +1614,9 @@ void ozy_send_buffer() {
         output_buffer[C3]=0x00;
         output_buffer[C3]|=radio->transmitter->attenuation;
         // Enabled HL2 hardware managed LNA gain during TX
-        if(radio->discovered->device==DEVICE_HERMES_LITE2) output_buffer[C3]|=0x80;
+        if(radio->discovered->device==DEVICE_HERMES_LITE2 ||
+            radio->discovered->device==DEVICE_HERMES_LITE_2PLUS) 
+            output_buffer[C3]|=0x80;
         output_buffer[C4]=0x00;
         break;
       case 7:
@@ -1709,7 +1721,8 @@ void ozy_send_buffer() {
 
     if(current_rx==0) {
       command++;
-      if (radio->discovered->device==DEVICE_HERMES_LITE2) {
+      if (radio->discovered->device==DEVICE_HERMES_LITE2 ||
+          radio->discovered->device==DEVICE_HERMES_LITE_2PLUS) {
         if (command>11) {
           command=1;
         }

@@ -843,14 +843,31 @@ static gboolean update_timer_cb(void *data) {
         break;
     }
 
+/*     fprintf(stderr,"1 ex_power = %d\n",ex_power); */
+/*     fprintf(stderr,"1 fwd_power = %d\n",fwd_power); */
+/*     fprintf(stderr,"1 constant1: %f, constant2: %f\n",constant1,constant2); */
+    
+    if(radio->discovered->device==DEVICE_HERMES) {
+        ex_power = 0;
+        constant1=3.3;
+        constant2=1.4;  
+        fwd_cal_offset=6;      
+    }
 
     if(fwd_power==0) {
       fwd_power=ex_power;
     }
+
+/*     fprintf(stderr,"2 ex_power = %d\n",ex_power); */
+/*     fprintf(stderr,"2 fwd_power = %d\n",fwd_power); */
+/*     fprintf(stderr,"2 constant1: %f, constant2: %f\n",constant1,constant2); */
     
     fwd_power=fwd_power-fwd_cal_offset;
     v1=((double)fwd_power/4095.0)*constant1;
     tx->fwd=(v1*v1)/constant2;    
+
+/*     fprintf(stderr,"v1: %f\n",v1); */
+/*     fprintf(stderr,"tx->fwd: %f\n",tx->fwd); */
     
     // Peak detection ring buffer
     tx->fwd_peak = get_peak(tx->fwd_peak_buf, tx->fwd);

@@ -159,14 +159,17 @@ GtkWidget *create_eer_dialog(RADIO *r) {
   gtk_widget_show(eer_pwm_max);
   gtk_grid_attach(GTK_GRID(eer_pwm_grid),eer_pwm_max,2,0,1,1);
   g_signal_connect(eer_pwm_max,"value-changed",G_CALLBACK(eer_pwm_max_cb),tx);
-  GtkWidget *eer_pwm_min_label=gtk_label_new("Minimum (0 - 1023)");
-  gtk_widget_show(eer_pwm_min_label);
-  gtk_grid_attach(GTK_GRID(eer_pwm_grid),eer_pwm_min_label,1,1,1,1);
-  GtkWidget *eer_pwm_min=gtk_spin_button_new_with_range(0,1023,1);
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(eer_pwm_min),tx->eer_pwm_min);
-  gtk_widget_show(eer_pwm_min);
-  gtk_grid_attach(GTK_GRID(eer_pwm_grid),eer_pwm_min,2,1,1,1);
-  g_signal_connect(eer_pwm_min,"value-changed",G_CALLBACK(eer_pwm_min_cb),tx);
+
+  if(r->discovered->device != DEVICE_HERMES_LITE_2PLUS) {
+      GtkWidget *eer_pwm_min_label=gtk_label_new("Minimum (0 - 1023)");
+      gtk_widget_show(eer_pwm_min_label);
+      gtk_grid_attach(GTK_GRID(eer_pwm_grid),eer_pwm_min_label,1,1,1,1);
+      GtkWidget *eer_pwm_min=gtk_spin_button_new_with_range(0,1023,1);
+      gtk_spin_button_set_value(GTK_SPIN_BUTTON(eer_pwm_min),tx->eer_pwm_min);
+      gtk_widget_show(eer_pwm_min);
+      gtk_grid_attach(GTK_GRID(eer_pwm_grid),eer_pwm_min,2,1,1,1);
+      g_signal_connect(eer_pwm_min,"value-changed",G_CALLBACK(eer_pwm_min_cb),tx);
+  }
 
   return eer_frame;
 }

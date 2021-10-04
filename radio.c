@@ -65,8 +65,6 @@
 #include "hl2.h"
 
 #ifdef MIDI
-#include "midi.h"
-#include "midi_dialog.h"
 // rather than including MIDI.h with all its internal stuff
 // (e.g. enum components) we just declare the single bit thereof
 // we need here to make a strict compiler happy.
@@ -298,8 +296,6 @@ g_print("radio_save_state: %s\n",filename);
   setProperty("radio.midi_filename",radio->midi_filename);
   sprintf(value,"%d",radio->midi_enabled);
   setProperty("radio.midi_enabled",value);
-
-  midi_save_state();
 #endif
 
   gtk_window_get_position(GTK_WINDOW(main_window),&x,&y);
@@ -342,6 +338,8 @@ void radio_restore_state(RADIO *radio) {
   }
 
   loadProperties(filename);
+
+  fprintf(stderr,"read %s\n",filename);
 
   value=getProperty("radio.model");
   if(value!=NULL) radio->model=atoi(value);
@@ -474,15 +472,18 @@ void radio_restore_state(RADIO *radio) {
 */
 
 #ifdef MIDI
-  midi_restore_state();
   value=getProperty("radio.midi_filename");
   if(value) strcpy(radio->midi_filename,value);
   value=getProperty("radio.midi_enabled");
   if(value) radio->midi_enabled=atoi(value);
 #endif
 
+  fprintf(stderr,"filter 1: %d\n",radio->filter_board);
+
   filterRestoreState();
+  fprintf(stderr,"filter 2: %d\n",radio->filter_board);
   bandRestoreState();
+  fprintf(stderr,"filter 3: %d\n",radio->filter_board);
 }
 
 gboolean radio_button_press_event_cb(GtkWidget *widget, GdkEventButton *event, gpointer data) {
@@ -1206,8 +1207,15 @@ static void create_visual(RADIO *r) {
 RADIO *create_radio(DISCOVERED *d) {
   RADIO *r;
   int i;
+  char filename[128];
 
 g_print("create_radio for %s %d\n",d->name,d->device);
+
+  sprintf(filename,"%s/.local/share/linhpsdr/2PLUS",
+          g_get_home_dir());
+  if(!access(filename,F_OK))
+      d->device = DEVICE_HERMES_LITE_2PLUS;
+
 
   radio=g_new0(RADIO,1);
   r=radio;
@@ -1217,6 +1225,7 @@ g_print("create_radio for %s %d\n",d->name,d->device);
       r->model=ATLAS;
       break;
     case DEVICE_HERMES:
+      case DEVICE_HERMES_LITE_2PLUS:
       r->model=ANAN_100;
       break;
     case DEVICE_HERMES2:
@@ -1438,7 +1447,8 @@ g_print("create_radio for %s %d\n",d->name,d->device);
 
   radio_restore_state(r);
 
-  if (radio->discovered->device==DEVICE_HERMES_LITE2) {
+  if (radio->discovered->device==DEVICE_HERMES_LITE2 ||
+      radio->discovered->device==DEVICE_HERMES_LITE_2PLUS) {
     r->hl2 = create_hl2();
   }
 
@@ -1526,15 +1536,8 @@ g_print("create_radio for %s %d\n",d->name,d->device);
   // running. So this is the last thing we do when starting the radio.
   //
 #ifdef MIDI
-//  if(r->midi_enabled) {
-//    r->midi_enabled=(MIDIstartup(r->midi_filename)==0);
-//  }
-  if(r->midi_enabled && midi_device_name!=NULL) {
-    if(register_midi_device(midi_device_name)<0) {
-      r->midi_enabled=false;
-    }
-  } else {
-    r->midi_enabled=false;
+  if(r->midi_enabled) {
+    r->midi_enabled=(MIDIstartup(r->midi_filename)==0);
   }
 #endif  
   

@@ -117,7 +117,7 @@ void update_tx_panadapter(RADIO *r) {
   TRANSMITTER *tx=r->transmitter;
   int width=gtk_widget_get_allocated_width(tx->panadapter);
   int height=gtk_widget_get_allocated_height(tx->panadapter);
-  float *samples=tx->pixel_samples;
+  float *samples=tx->pixel_samples,temp_f;
   double hz_per_pixel=(double)tx->iq_output_rate/(double)tx->pixels;
   char text[32];
   int i;
@@ -286,7 +286,13 @@ void update_tx_panadapter(RADIO *r) {
     if(radio->discovered->device==DEVICE_HERMES_LITE2) {   
       cairo_set_font_size(cr, 12);       
       SetColour(cr, TEXT_A);
+
+#ifdef TEMP_IN_F
+      temp_f = (tx->temperature * 1.8) + 32.0;
+      sprintf(text,"%2.0f degF",temp_f);
+#else
       sprintf(text,"%2.0f degC",tx->temperature);
+#endif
       cairo_move_to(cr, 220, height-8);
       cairo_show_text(cr, text);
     }

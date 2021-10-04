@@ -52,6 +52,7 @@ enum {
 #ifdef SOAPYSDR
   ,SOAPY_DEVICE
 #endif
+  ,HERMES_LITE_2PLUS
 };
 
 enum {

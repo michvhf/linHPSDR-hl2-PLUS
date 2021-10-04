@@ -58,6 +58,7 @@ enum {
 #ifdef SOAPYSDR
   ,DEVICE_SOAPYSDR
 #endif
+  ,DEVICE_HERMES_LITE_2PLUS
 };
 
 #define STATE_AVAILABLE 2

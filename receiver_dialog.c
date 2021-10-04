@@ -1178,12 +1178,17 @@ GtkWidget *create_receiver_dialog(RECEIVER *rx) {
 #ifdef SOAPYSDR
        && radio->discovered->device!=DEVICE_SOAPYSDR
 #endif
-      ) {
+      ) { 
+        GtkWidget *remote_audio;
 
-      GtkWidget *remote_audio=gtk_check_button_new_with_label("Remote Audio");
-      gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (remote_audio), rx->remote_audio);
-      gtk_grid_attach(GTK_GRID(audio_grid),remote_audio,1,0,1,1);
-      g_signal_connect(remote_audio,"toggled",G_CALLBACK(remote_audio_cb),rx);
+        if(radio->discovered->device == DEVICE_HERMES_LITE_2PLUS)
+            remote_audio=gtk_check_button_new_with_label("2Plus Phones");
+        else 
+            remote_audio=gtk_check_button_new_with_label("Remote Audio");
+        
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (remote_audio), rx->remote_audio);
+        gtk_grid_attach(GTK_GRID(audio_grid),remote_audio,1,0,1,1);
+        g_signal_connect(remote_audio,"toggled",G_CALLBACK(remote_audio_cb),rx);
     }
 
     rx->audio_choice_b=gtk_combo_box_text_new();

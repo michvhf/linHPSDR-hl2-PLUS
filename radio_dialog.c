@@ -48,6 +48,8 @@
 #include "cwdaemon.h"
 #endif
 
+static void eer_pwm_min_cb(GtkWidget *, gpointer);
+
 static GtkWidget *filter_board_combo_box;
 static GtkWidget *adc0_frame;
 static GtkWidget *adc0_antenna_combo_box;
@@ -105,37 +107,40 @@ static gboolean delete_event(GtkWidget *widget, GdkEvent *event, gpointer data) 
 */
 
 static void radio_dialog_update_controls() {
-	g_print("%s: model=%d\n",__FUNCTION__,radio->model);
-  switch(radio->model) {
-    case ANAN_10:
-    case ANAN_10E:
-    case ANAN_100:
-    case ANAN_100D:
-    case ANAN_200D:
-      radio->filter_board=ALEX;
-      break;
-    case ANAN_7000DLE:
-    case ANAN_8000DLE:
-      radio->filter_board=ALEX;
-      break;
-    case HERMES_LITE_2:
-      //radio->filter_board=N2ADR;
-      //radio->filter_board=HL2_MRF101;
-      break;
-    case ATLAS:
-      radio->filter_board=ALEX;
-      break;
-    case HERMES:
-    case HERMES_2:
-    case ANGELIA:
-    case ORION_1:
-    case ORION_2:
+	g_print("%s\n",__FUNCTION__);
+
+    if(radio->filter_board == NONE) {
+        switch(radio->model) {
+            case ANAN_10:
+            case ANAN_10E:
+            case ANAN_100:
+            case ANAN_100D:
+            case ANAN_200D:
+                radio->filter_board=ALEX;
+                break;
+            case ANAN_7000DLE:
+            case ANAN_8000DLE:
+                radio->filter_board=ALEX;
+                break;
+            case HERMES_LITE_2:
+                //radio->filter_board=N2ADR;
+                //radio->filter_board=HL2_MRF101;
+                break;
+            case ATLAS:
+                radio->filter_board=ALEX;
+                break;
+            case HERMES:
+            case HERMES_2:
+            case ANGELIA:
+            case ORION_1:
+            case ORION_2:
 #ifdef SOAPYSDR
-    case SOAPY_DEVICE:
+            case SOAPY_DEVICE:
 #endif
-      radio->filter_board=NONE;
-      break;
-  }
+                radio->filter_board=NONE;
+                break;
+        }
+    }
 
   switch(radio->model) {
     case ANAN_7000DLE:
@@ -176,9 +181,10 @@ static void radio_dialog_update_controls() {
       break;
     case HERMES_LITE:
     case HERMES_LITE_2:
+    case HERMES_LITE_2PLUS:
       break;
 #ifdef SOAPYSDR
-    case SOAPY_DEVICE:
+    case SOAPYSDR:
       break;
 #endif
     case ATLAS:
@@ -189,7 +195,6 @@ static void radio_dialog_update_controls() {
       break;
 
     default:
-      g_print("%s: defualt set_sensitive\n",__FUNCTION__);
       gtk_widget_set_sensitive(adc0_antenna_combo_box, FALSE);
       gtk_widget_set_sensitive(adc0_filters_combo_box, FALSE);
       gtk_widget_set_sensitive(adc0_hpf_combo_box, FALSE);
@@ -216,51 +221,44 @@ static void model_cb(GtkComboBox *widget,gpointer data) {
   radio_dialog_update_controls();
 }
 
-static void sample_rate_cb(GtkComboBoxText *widget,gpointer data) {
+static void sample_rate_cb(GtkComboBox *widget,gpointer data) {
   RADIO *radio=(RADIO *)data;
   int rate;
   int i;
 
-  rate=atoi(gtk_combo_box_text_get_active_text(widget));
-
-  switch(radio->discovered->protocol) {
-    case PROTOCOL_1:
-      protocol1_stop();
+  switch(gtk_combo_box_get_active(widget)) {
+    case 0: // 48000
+      rate=48000;
       break;
-    case PROTOCOL_2:
+    case 1: // 96000
+      rate=96000;
       break;
-#ifdef SOAPYSDR
-    case PROTOCOL_SOAPYSDR:
-      //soapy_protocol_stop();
+    case 2: // 192000
+      rate=192000;
       break;
-#endif
+    case 3: // 384000
+      rate=384000;
+      break;
   }
+
+  protocol1_stop();
   radio->sample_rate=rate;
   for(i=0;i<radio->discovered->supported_receivers;i++) {
     if(radio->receiver[i]!=NULL) {
       receiver_change_sample_rate(radio->receiver[i],rate);
     }
   }
-  switch(radio->discovered->protocol) {
-    case PROTOCOL_1:
-      protocol1_set_mic_sample_rate(rate);
-      break;
-    case PROTOCOL_2:
-      break;
-#ifdef SOAPYSDR
-    case PROTOCOL_SOAPYSDR:
-      break;
-#endif
-  }
-
-  g_idle_add(radio_restart,(void *)radio);
+  protocol1_set_mic_sample_rate(rate);
+  g_idle_add(radio_start,(void *)radio);
 }
 
 static void filter_board_cb(GtkComboBox *widget,gpointer data) {
   RADIO *radio=(RADIO *)data;
   radio->filter_board=gtk_combo_box_get_active(widget);
 
+  fprintf(stderr,"radio->filter_board before: %d\n",radio->filter_board);
   change_filters();
+  fprintf(stderr,"radio->filter_board after: %d\n",radio->filter_board);
   
   if(radio->discovered->protocol==PROTOCOL_2) {
     protocol2_high_priority();
@@ -619,7 +617,19 @@ static void cwport_value_changed_cb(GtkWidget *widget, gpointer data) {
 
 #endif
 
+
+static void dot_mem_per_cb(GtkWidget *widget, gpointer data) 
+{
+    RADIO *radio=(RADIO *)data;
+    TRANSMITTER *tx=radio->transmitter;
+    int zzz=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
+    zzz *= 100;
+    tx->eer_pwm_min=zzz;
+}
+
+
 GtkWidget *create_radio_dialog(RADIO *radio) {
+  TRANSMITTER *tx=(TRANSMITTER *)radio->transmitter;
   g_print("%s\n",__FUNCTION__);
   GtkWidget *grid=gtk_grid_new();
   gtk_grid_set_row_homogeneous(GTK_GRID(grid),FALSE);
@@ -658,6 +668,7 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
 #ifdef SOAPYSDR
   gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(model_combo_box),NULL,"SoapySDR");
 #endif
+  gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(model_combo_box),NULL,"HERMES LITE 2+");
   gtk_combo_box_set_active(GTK_COMBO_BOX(model_combo_box),radio->model);
   g_signal_connect(model_combo_box,"changed",G_CALLBACK(model_cb),radio);
   gtk_grid_attach(GTK_GRID(model_grid),model_combo_box,x,0,1,1);
@@ -684,10 +695,10 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(filter_board_combo_box),NULL,"NONE");
     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(filter_board_combo_box),NULL,"ALEX FILTERS");
     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(filter_board_combo_box),NULL,"APOLLO FILTERS");
-    if(radio->discovered->device==DEVICE_HERMES_LITE2) {
+//    if(radio->discovered->device==DEVICE_HERMES_LITE2) {
       gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(filter_board_combo_box),NULL,"N2ADR FILTERS");
       gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(filter_board_combo_box),NULL,"HL2-MRF101");       
-    }    
+//    }    
     gtk_combo_box_set_active(GTK_COMBO_BOX(filter_board_combo_box),radio->filter_board);
     g_signal_connect(filter_board_combo_box,"changed",G_CALLBACK(filter_board_cb),radio);
     gtk_grid_attach(GTK_GRID(model_grid),filter_board_combo_box,x,0,1,1);
@@ -719,34 +730,6 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
     g_signal_connect(sample_rate_combo_box,"changed",G_CALLBACK(sample_rate_cb),radio);
     gtk_grid_attach(GTK_GRID(model_grid),sample_rate_combo_box,x,0,1,1);
   }
-
-#ifdef SOAPYSDR
-  if(radio->discovered->device==DEVICE_SOAPYSDR &&
-     strcmp(radio->discovered->name,"sdrplay")==0) {
-    GtkWidget *sample_rate_combo_box=gtk_combo_box_text_new();
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(sample_rate_combo_box),NULL,"96000");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(sample_rate_combo_box),NULL,"192000");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(sample_rate_combo_box),NULL,"384000");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(sample_rate_combo_box),NULL,"768000");
-    switch(radio->sample_rate) {
-      case 96000:
-        gtk_combo_box_set_active(GTK_COMBO_BOX(sample_rate_combo_box),0);
-        break;
-      case 192000:
-        gtk_combo_box_set_active(GTK_COMBO_BOX(sample_rate_combo_box),1);
-        break;
-      case 384000:
-        gtk_combo_box_set_active(GTK_COMBO_BOX(sample_rate_combo_box),2);
-        break;
-      case 768000:
-        gtk_combo_box_set_active(GTK_COMBO_BOX(sample_rate_combo_box),3);
-        break;
-    }
-    g_signal_connect(sample_rate_combo_box,"changed",G_CALLBACK(sample_rate_cb),radio);
-    gtk_grid_attach(GTK_GRID(model_grid),sample_rate_combo_box,x,0,1,1);
-  }
-#endif
-
 
   adc0_frame=gtk_frame_new("ADC-0");
   GtkWidget *adc0_grid=gtk_grid_new();
@@ -797,19 +780,41 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
       break;
 #endif
     case DEVICE_HERMES_LITE2:
+    case DEVICE_HERMES_LITE_2PLUS:
       attenuation_label=gtk_label_new("LNA gain (dB):");
       gtk_grid_attach(GTK_GRID(adc0_grid),attenuation_label,0,0,1,1);
       attenuation_b=gtk_spin_button_new_with_range(-12.0,48.0,1.0);
       gtk_spin_button_set_value(GTK_SPIN_BUTTON(attenuation_b),(double)radio->adc[0].attenuation);
-      gtk_grid_attach(GTK_GRID(adc0_grid),attenuation_b,2,0,1,1);
+      if(radio->discovered->device == DEVICE_HERMES_LITE_2PLUS)
+          gtk_grid_attach(GTK_GRID(adc0_grid),attenuation_b,1,0,1,1);
+      else
+          gtk_grid_attach(GTK_GRID(adc0_grid),attenuation_b,2,0,1,1);
       g_signal_connect(attenuation_b,"value_changed",G_CALLBACK(attenuation_value_changed_cb),&radio->adc[0]);
 
       if (radio->hl2 != NULL) {
         disable_fpgaclk_b=gtk_check_button_new_with_label("FPGA PSU clock");
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (disable_fpgaclk_b), radio->hl2->psu_clk);
-        gtk_grid_attach(GTK_GRID(adc0_grid),disable_fpgaclk_b,0,1,1,1);
+        gtk_grid_attach(GTK_GRID(adc0_grid),disable_fpgaclk_b,2,0,1,1);
         g_signal_connect(disable_fpgaclk_b,"toggled",G_CALLBACK(psu_clk_cb),radio);
       }
+      if(radio->discovered->device == DEVICE_HERMES_LITE_2PLUS) {
+          // Row 2
+          dither_b=gtk_check_button_new_with_label("2Plus Speaker");
+          gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (dither_b), radio->adc[0].dither);
+          gtk_grid_attach(GTK_GRID(adc0_grid),dither_b,0,1,1,1);
+          g_signal_connect(dither_b,"toggled",G_CALLBACK(dither_cb),&radio->adc[0]);
+          
+          random_b=gtk_check_button_new_with_label("Noise Mitigation Off");
+          gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (random_b), radio->adc[0].random);
+          gtk_grid_attach(GTK_GRID(adc0_grid),random_b,1,1,1,1);
+          g_signal_connect(random_b,"toggled",G_CALLBACK(random_cb),&radio->adc[0]);
+          
+          preamp_b=gtk_check_button_new_with_label("Preamp");
+          gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (preamp_b), radio->adc[0].preamp);
+          gtk_grid_attach(GTK_GRID(adc0_grid),preamp_b,2,1,1,1);
+          g_signal_connect(preamp_b,"toggled",G_CALLBACK(preamp_cb),&radio->adc[0]);
+      }  
+
       break;    
 
     case DEVICE_HERMES_LITE:
@@ -891,6 +896,7 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
       gtk_grid_attach(GTK_GRID(adc0_grid),attenuation_label,3,1,1,1);
   
       attenuation_b=gtk_spin_button_new_with_range(0.0,31.0,1.0);
+//      attenuation_b=gtk_spin_button_new_with_range(-12.0,48.0,1.0);
       gtk_spin_button_set_value(GTK_SPIN_BUTTON(attenuation_b),(double)radio->adc[0].attenuation);
       gtk_grid_attach(GTK_GRID(adc0_grid),attenuation_b,4,1,1,1);
       g_signal_connect(attenuation_b,"value_changed",G_CALLBACK(attenuation_value_changed_cb),&radio->adc[0]);
@@ -958,6 +964,7 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
       break;
       
     case DEVICE_HERMES_LITE2:
+    case DEVICE_HERMES_LITE_2PLUS:
       if ((radio->hl2 != NULL) && (radio->diversity_mixers > 0)) {    
         adc1_frame = gtk_frame_new("ADC-1");
         GtkWidget *adc1_grid = gtk_grid_new();
@@ -1086,7 +1093,8 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
   g_signal_connect(swr_alarm_b,"value_changed",G_CALLBACK(swr_alarm_changed_cb),radio);
 
   // Temperature alarm threshold
-  if (radio->discovered->device == DEVICE_HERMES_LITE2) {
+  if (radio->discovered->device == DEVICE_HERMES_LITE2 ||
+      radio->discovered->device == DEVICE_HERMES_LITE_2PLUS) {
     GtkWidget *temp_alarm_label=gtk_label_new("Temp alarm at ");
     gtk_widget_show(temp_alarm_label);
     gtk_grid_attach(GTK_GRID(config_grid),temp_alarm_label,2,0,1,1);
@@ -1122,8 +1130,15 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
   update_audio_backends(radio);
   gtk_combo_box_set_active(GTK_COMBO_BOX(audio_backend_combo_box),radio->which_audio_backend);
   gtk_grid_attach(GTK_GRID(audio_grid),audio_backend_combo_box,2,0,1,1);
-  g_signal_connect(audio_backend_combo_box,"changed",G_CALLBACK(audio_backend_cb),radio);
-
+  g_signal_connect(audio_backend_combo_box,"changed",G_CALLBACK(audio_backend_cb),radio
+);
+  
+  if (radio->discovered->device == DEVICE_HERMES_LITE_2PLUS) {
+      GtkWidget *boost_b=gtk_check_button_new_with_label("Mic boost");
+      gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (boost_b), radio->mic_boost);
+      gtk_grid_attach(GTK_GRID(audio_grid),boost_b,3,0,1,1);
+      g_signal_connect(boost_b,"toggled",G_CALLBACK(boost_cb),radio);
+  }
 
   GtkWidget *calibration_frame=gtk_frame_new("Calibration [dBm]");
   GtkWidget *calibration_grid=gtk_grid_new();
@@ -1323,6 +1338,17 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
   gtk_widget_show(cw_keyer_hang_time_b);
   gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_hang_time_b,x++,y,1,1);
   g_signal_connect(cw_keyer_hang_time_b,"value_changed",G_CALLBACK(cw_keyer_hang_time_value_changed_cb),radio);
+
+  if(radio->discovered->device == DEVICE_HERMES_LITE_2PLUS) {
+      GtkWidget *eer_pwm_min_label=gtk_label_new("Dot Memory Inhibit Period");
+      gtk_widget_show(eer_pwm_min_label);
+      gtk_grid_attach(GTK_GRID(cw_grid),eer_pwm_min_label,x++,y,1,1);
+      GtkWidget *eer_pwm_min=gtk_spin_button_new_with_range(0,7,1);
+      gtk_spin_button_set_value(GTK_SPIN_BUTTON(eer_pwm_min),(tx->eer_pwm_min/100));
+      gtk_widget_show(eer_pwm_min);
+      gtk_grid_attach(GTK_GRID(cw_grid),eer_pwm_min,x++,y,1,1);
+      g_signal_connect(eer_pwm_min,"value-changed",G_CALLBACK(dot_mem_per_cb),radio);
+  }
 
   x=0;
   y=0;

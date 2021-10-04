@@ -327,6 +327,10 @@ void update_rx_panadapter(RECEIVER *rx,gboolean running) {
       attenuation = attenuation * -1;
   }
   
+  if(radio->discovered->device==DEVICE_HERMES) {
+      attenuation = attenuation * -1;
+  }
+  
 
   if(display_height<=1) return;
 
