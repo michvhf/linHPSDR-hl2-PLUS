@@ -107,7 +107,7 @@ static gboolean delete_event(GtkWidget *widget, GdkEvent *event, gpointer data) 
 */
 
 static void radio_dialog_update_controls() {
-	g_print("%s\n",__FUNCTION__);
+	g_print("%s\n",__FUNCTION__,radio->model);
 
     if(radio->filter_board == NONE) {
         switch(radio->model) {
@@ -184,7 +184,7 @@ static void radio_dialog_update_controls() {
     case HERMES_LITE_2PLUS:
       break;
 #ifdef SOAPYSDR
-    case SOAPYSDR:
+    case SOAPY_DEVICE:
       break;
 #endif
     case ATLAS:
@@ -195,6 +195,7 @@ static void radio_dialog_update_controls() {
       break;
 
     default:
+      g_print("%s: defualt set_sensitive\n",__FUNCTION__);
       gtk_widget_set_sensitive(adc0_antenna_combo_box, FALSE);
       gtk_widget_set_sensitive(adc0_filters_combo_box, FALSE);
       gtk_widget_set_sensitive(adc0_hpf_combo_box, FALSE);
@@ -221,44 +222,51 @@ static void model_cb(GtkComboBox *widget,gpointer data) {
   radio_dialog_update_controls();
 }
 
-static void sample_rate_cb(GtkComboBox *widget,gpointer data) {
+static void sample_rate_cb(GtkComboBoxText *widget,gpointer data) {
   RADIO *radio=(RADIO *)data;
   int rate;
   int i;
 
-  switch(gtk_combo_box_get_active(widget)) {
-    case 0: // 48000
-      rate=48000;
-      break;
-    case 1: // 96000
-      rate=96000;
-      break;
-    case 2: // 192000
-      rate=192000;
-      break;
-    case 3: // 384000
-      rate=384000;
-      break;
-  }
+  rate=atoi(gtk_combo_box_text_get_active_text(widget));
 
-  protocol1_stop();
+  switch(radio->discovered->protocol) {
+    case PROTOCOL_1:
+      protocol1_stop();
+      break;
+    case PROTOCOL_2:
+      break;
+#ifdef SOAPYSDR
+    case PROTOCOL_SOAPYSDR:
+      //soapy_protocol_stop();
+      break;
+#endif
+  }
   radio->sample_rate=rate;
   for(i=0;i<radio->discovered->supported_receivers;i++) {
     if(radio->receiver[i]!=NULL) {
       receiver_change_sample_rate(radio->receiver[i],rate);
     }
   }
-  protocol1_set_mic_sample_rate(rate);
-  g_idle_add(radio_start,(void *)radio);
+  switch(radio->discovered->protocol) {
+    case PROTOCOL_1:
+      protocol1_set_mic_sample_rate(rate);
+      break;
+    case PROTOCOL_2:
+      break;
+#ifdef SOAPYSDR
+    case PROTOCOL_SOAPYSDR:
+      break;
+#endif
+  }
+
+  g_idle_add(radio_restart,(void *)radio);
 }
 
 static void filter_board_cb(GtkComboBox *widget,gpointer data) {
   RADIO *radio=(RADIO *)data;
   radio->filter_board=gtk_combo_box_get_active(widget);
 
-  fprintf(stderr,"radio->filter_board before: %d\n",radio->filter_board);
   change_filters();
-  fprintf(stderr,"radio->filter_board after: %d\n",radio->filter_board);
   
   if(radio->discovered->protocol==PROTOCOL_2) {
     protocol2_high_priority();
@@ -731,6 +739,34 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
     gtk_grid_attach(GTK_GRID(model_grid),sample_rate_combo_box,x,0,1,1);
   }
 
+#ifdef SOAPYSDR
+  if(radio->discovered->device==DEVICE_SOAPYSDR &&
+     strcmp(radio->discovered->name,"sdrplay")==0) {
+    GtkWidget *sample_rate_combo_box=gtk_combo_box_text_new();
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(sample_rate_combo_box),NULL,"96000");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(sample_rate_combo_box),NULL,"192000");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(sample_rate_combo_box),NULL,"384000");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(sample_rate_combo_box),NULL,"768000");
+    switch(radio->sample_rate) {
+      case 96000:
+        gtk_combo_box_set_active(GTK_COMBO_BOX(sample_rate_combo_box),0);
+        break;
+      case 192000:
+        gtk_combo_box_set_active(GTK_COMBO_BOX(sample_rate_combo_box),1);
+        break;
+      case 384000:
+        gtk_combo_box_set_active(GTK_COMBO_BOX(sample_rate_combo_box),2);
+        break;
+      case 768000:
+        gtk_combo_box_set_active(GTK_COMBO_BOX(sample_rate_combo_box),3);
+        break;
+    }
+    g_signal_connect(sample_rate_combo_box,"changed",G_CALLBACK(sample_rate_cb),radio);
+    gtk_grid_attach(GTK_GRID(model_grid),sample_rate_combo_box,x,0,1,1);
+  }
+#endif
+
+
   adc0_frame=gtk_frame_new("ADC-0");
   GtkWidget *adc0_grid=gtk_grid_new();
   gtk_grid_set_row_homogeneous(GTK_GRID(adc0_grid),TRUE);
@@ -896,7 +932,6 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
       gtk_grid_attach(GTK_GRID(adc0_grid),attenuation_label,3,1,1,1);
   
       attenuation_b=gtk_spin_button_new_with_range(0.0,31.0,1.0);
-//      attenuation_b=gtk_spin_button_new_with_range(-12.0,48.0,1.0);
       gtk_spin_button_set_value(GTK_SPIN_BUTTON(attenuation_b),(double)radio->adc[0].attenuation);
       gtk_grid_attach(GTK_GRID(adc0_grid),attenuation_b,4,1,1,1);
       g_signal_connect(attenuation_b,"value_changed",G_CALLBACK(attenuation_value_changed_cb),&radio->adc[0]);
@@ -1130,8 +1165,7 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
   update_audio_backends(radio);
   gtk_combo_box_set_active(GTK_COMBO_BOX(audio_backend_combo_box),radio->which_audio_backend);
   gtk_grid_attach(GTK_GRID(audio_grid),audio_backend_combo_box,2,0,1,1);
-  g_signal_connect(audio_backend_combo_box,"changed",G_CALLBACK(audio_backend_cb),radio
-);
+  g_signal_connect(audio_backend_combo_box,"changed",G_CALLBACK(audio_backend_cb),radio);
   
   if (radio->discovered->device == DEVICE_HERMES_LITE_2PLUS) {
       GtkWidget *boost_b=gtk_check_button_new_with_label("Mic boost");
