@@ -2,7 +2,8 @@
 
 ### Hermes Lite 2-PLUS
 
-This version has been updated to include the Hermes Lite 2 PLUS.  https://groups.io/g/HermesLite2Plus
+This version has been updated to include the Hermes Lite 2 PLUS:  https://groups.io/g/HermesLite2Plus
+
 Create an empty file at $HOME/.local/share/linhpsdr-hl2-PLUS/2PLUS and start the program with the 2PLUS Companion Board V3 installed with the ak4951v3 variant gateware in the Hermes Lite 2.  
 
 This has not yet been tested to make sure nothing for the non-2PLUS radio is broken, nor has it been compiled on a Mac.
