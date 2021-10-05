@@ -463,6 +463,11 @@ static void cw_keyer_hang_time_value_changed_cb(GtkWidget *widget, gpointer data
   radio->cw_keyer_hang_time=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
 }
 
+static void cw_keyer_keydown_delay_value_changed_cb(GtkWidget *widget, gpointer data) {
+  RADIO *radio=(RADIO *)data;
+  radio->cw_keyer_ptt_delay=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
+}
+
 static void cw_keyer_weight_value_changed_cb(GtkWidget *widget, gpointer data) {
   RADIO *radio=(RADIO *)data;
   radio->cw_keyer_weight=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
@@ -631,7 +636,7 @@ static void dot_mem_per_cb(GtkWidget *widget, gpointer data)
     RADIO *radio=(RADIO *)data;
     TRANSMITTER *tx=radio->transmitter;
     int zzz=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
-    zzz *= 100;
+    zzz += 100;
     tx->eer_pwm_min=zzz;
 }
 
@@ -1363,22 +1368,36 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
   }   
   
   #endif
-  GtkWidget *cw_keyer_delay_label=gtk_label_new("Break In Delay (Ms):");
-  gtk_widget_show(cw_keyer_delay_label);
-  gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_delay_label,x++,y,1,1);
 
-  GtkWidget *cw_keyer_hang_time_b=gtk_spin_button_new_with_range(0.0,1000.0,1.0);
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(cw_keyer_hang_time_b),(double)radio->cw_keyer_hang_time);
-  gtk_widget_show(cw_keyer_hang_time_b);
-  gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_hang_time_b,x++,y,1,1);
-  g_signal_connect(cw_keyer_hang_time_b,"value_changed",G_CALLBACK(cw_keyer_hang_time_value_changed_cb),radio);
+  if(radio->discovered->device != DEVICE_HERMES_LITE_2PLUS) {
+      GtkWidget *cw_keyer_delay_label=gtk_label_new("Break In Delay (Ms):");
+      gtk_widget_show(cw_keyer_delay_label);
+      gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_delay_label,x++,y,1,1);
+      
+      GtkWidget *cw_keyer_hang_time_b=gtk_spin_button_new_with_range(0.0,1000.0,1.0);
+      gtk_spin_button_set_value(GTK_SPIN_BUTTON(cw_keyer_hang_time_b),(double)radio->cw_keyer_hang_time);
+      gtk_widget_show(cw_keyer_hang_time_b);
+      gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_hang_time_b,x++,y,1,1);
+      g_signal_connect(cw_keyer_hang_time_b,"value_changed",G_CALLBACK(cw_keyer_hang_time_value_changed_cb),radio);
+  }
 
   if(radio->discovered->device == DEVICE_HERMES_LITE_2PLUS) {
+      GtkWidget *cw_keyer_delay_label=gtk_label_new("Key-Down Delay (Ms):");
+      gtk_widget_show(cw_keyer_delay_label);
+      gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_delay_label,x++,y,1,1);
+      
+      GtkWidget *cw_keyer_hang_time_b=gtk_spin_button_new_with_range(0.0,1000.0,1.0);
+      gtk_spin_button_set_value(GTK_SPIN_BUTTON(cw_keyer_hang_time_b),(double)radio->cw_keyer_ptt_delay);
+
+      gtk_widget_show(cw_keyer_hang_time_b);
+      gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_hang_time_b,x++,y,1,1);
+      g_signal_connect(cw_keyer_hang_time_b,"value_changed",G_CALLBACK(cw_keyer_keydown_delay_value_changed_cb),radio);
+
       GtkWidget *eer_pwm_min_label=gtk_label_new("Dot Memory Inhibit Period");
       gtk_widget_show(eer_pwm_min_label);
       gtk_grid_attach(GTK_GRID(cw_grid),eer_pwm_min_label,x++,y,1,1);
       GtkWidget *eer_pwm_min=gtk_spin_button_new_with_range(0,7,1);
-      gtk_spin_button_set_value(GTK_SPIN_BUTTON(eer_pwm_min),(tx->eer_pwm_min/100));
+      gtk_spin_button_set_value(GTK_SPIN_BUTTON(eer_pwm_min),(tx->eer_pwm_min-100));
       gtk_widget_show(eer_pwm_min);
       gtk_grid_attach(GTK_GRID(cw_grid),eer_pwm_min,x++,y,1,1);
       g_signal_connect(eer_pwm_min,"value-changed",G_CALLBACK(dot_mem_per_cb),radio);
