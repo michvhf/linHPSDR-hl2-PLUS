@@ -180,7 +180,8 @@ typedef struct _receiver {
   gint panadapter_step;
   gboolean panadapter_filled;
   gboolean panadapter_gradient;
-  gboolean panadapter_agc_line;  
+  gboolean panadapter_agc_line; 
+  gint panadapter_single_color;
 
   GtkWidget *waterfall;
   gint waterfall_width;
