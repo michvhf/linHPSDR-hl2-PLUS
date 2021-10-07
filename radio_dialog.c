@@ -1369,7 +1369,6 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
   
   #endif
 
-  if(radio->discovered->device != DEVICE_HERMES_LITE_2PLUS) {
       GtkWidget *cw_keyer_delay_label=gtk_label_new("Break In Delay (Ms):");
       gtk_widget_show(cw_keyer_delay_label);
       gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_delay_label,x++,y,1,1);
@@ -1379,7 +1378,6 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
       gtk_widget_show(cw_keyer_hang_time_b);
       gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_hang_time_b,x++,y,1,1);
       g_signal_connect(cw_keyer_hang_time_b,"value_changed",G_CALLBACK(cw_keyer_hang_time_value_changed_cb),radio);
-  }
 
   if(radio->discovered->device == DEVICE_HERMES_LITE_2PLUS) {
       GtkWidget *cw_keyer_delay_label=gtk_label_new("Key-Down Delay (Ms):");
@@ -1392,6 +1390,9 @@ GtkWidget *create_radio_dialog(RADIO *radio) {
       gtk_widget_show(cw_keyer_hang_time_b);
       gtk_grid_attach(GTK_GRID(cw_grid),cw_keyer_hang_time_b,x++,y,1,1);
       g_signal_connect(cw_keyer_hang_time_b,"value_changed",G_CALLBACK(cw_keyer_keydown_delay_value_changed_cb),radio);
+
+      y++;
+      x=0;
 
       GtkWidget *eer_pwm_min_label=gtk_label_new("Dot Memory Inhibit Period");
       gtk_widget_show(eer_pwm_min_label);
