@@ -8,6 +8,10 @@ Create an empty file at $HOME/.local/share/linhpsdr-hl2-PLUS/2PLUS and start the
 
 This has not yet been tested to make sure nothing for the non-2PLUS radio is broken, nor has it been compiled on a Mac.
 
+### NOTES ON RECENT CHANGES
+
+As of 18-OCT-2021, the bookmarks file format has been changed making it no longer compatible with the old version.  Remove the old version before using this version.  
+
 ### Development environment
 
 Development and testing has been run on Ubuntu 17.10 and Ubuntu 18.04. If run on early versions there may be a problem with GTK not supporting the gtk_menu_popup_at_pointer function vfo.c. For information on MacOS support see [MacOS.md](./MacOS.md).
