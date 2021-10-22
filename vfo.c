@@ -781,14 +781,19 @@ static void bpsk_b_cb(GtkToggleButton *widget,gpointer user_data) {
   }
 }
 
-static void ant_b_cb(GtkToggleButton *widget,gpointer user_data) {
+static void ant_b_cb(GtkToggleButton *widget,gpointer user_data) 
+{
+    BAND *b=band_get_current_band();
 
-  if (radio->adc[0].antenna == 0) {
-    radio->adc[0].antenna = 3;
-  }
-  else {
-    radio->adc[0].antenna = 0;    
-  }
+    if (radio->adc[0].antenna == 0) {
+        radio->adc[0].antenna = 3;
+        b->OCrx |= 0x80; // P13 aka GP7 on the N2ADR board
+    }
+    else {
+        radio->adc[0].antenna = 0;
+        b->OCrx ^= 0x80; // P13 aka GP7 on the N2ADR board
+    }
+    fprintf(stderr,"OCrx = 0x%x\n",b->OCrx);
 }
 
 static void rit_b_cb(GtkToggleButton *widget,gpointer user_data) {
@@ -1793,7 +1798,8 @@ GtkWidget *create_vfo(RECEIVER *rx) {
   x=x+40;
 
   
-  if(radio->discovered->device==DEVICE_HERMES_LITE2) {
+  if(radio->discovered->device==DEVICE_HERMES_LITE2 ||
+     radio->discovered->device==DEVICE_HERMES_LITE_2PLUS) {
     v->ant_b=gtk_toggle_button_new_with_label("RXANT");
     gtk_widget_set_name(v->ant_b,"vfo-toggle");
     gtk_toggle_button_set_mode(GTK_TOGGLE_BUTTON(v->ant_b),FALSE);
