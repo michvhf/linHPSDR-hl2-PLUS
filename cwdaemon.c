@@ -109,7 +109,7 @@ GMutex cwdaemon_mutex;
 
 bool keytx;
 bool keysidetone;
-
+double cwd_changed_at;
 
 /* Default values of parameters, may be modified only through
    command line arguments passed to cwdaemon.
